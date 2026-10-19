@@ -60,45 +60,66 @@ class MainActivity : Activity() {
         val scroll = ScrollView(this)
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(18), dp(18), dp(24))
+            setPadding(dp(18), dp(16), dp(18), dp(26))
             layoutDirection = View.LAYOUT_DIRECTION_RTL
             setBackgroundColor(0xFFF3F6FA.toInt())
         }
         scroll.addView(root)
         setContentView(scroll)
 
+        val topBar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(2), dp(2), dp(2), dp(12))
+        }
+        val appTitle = TextView(this).apply {
+            text = "ZAKARY GRD  |  تسيير النفايات الصناعية"
+            textSize = 18f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(0xFF172B3A.toInt())
+            gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
+        }
+        topBar.addView(appTitle, LinearLayout.LayoutParams(0, dp(48), 1f))
+        root.addView(topBar, matchWrap())
+
         val hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(24), dp(20), dp(24))
+            setPadding(dp(22), dp(25), dp(22), dp(25))
             setBackgroundColor(0xFF087F8C.toInt())
         }
         val brand = TextView(this).apply {
-            text = "ZAKARY GRD  ♻️"
-            textSize = 28f
+            text = "ZAKARY GRD   ♻️"
+            textSize = 29f
             setTypeface(null, Typeface.BOLD)
             setTextColor(0xFFFFFFFF.toInt())
             gravity = Gravity.RIGHT
         }
         val subtitle = TextView(this).apply {
-            text = "نظام تسيير واسترجاع النفايات الصناعية"
-            textSize = 19f
+            text = "نظام تسيير واسترجاع النفايات الصناعية | نسخة محسّنة"
+            textSize = 17f
             setTextColor(0xFFE7FAFC.toInt())
             gravity = Gravity.RIGHT
-            setPadding(0, dp(10), 0, 0)
+            setPadding(0, dp(12), 0, 0)
         }
         hero.addView(brand)
         hero.addView(subtitle)
         root.addView(hero, matchWrap())
 
         dashboard = TextView(this).apply {
-            textSize = 15f
-            setTextColor(0xFF243246.toInt())
+            textSize = 16f
+            setTextColor(0xFF23405A.toInt())
             setPadding(dp(16), dp(16), dp(16), dp(16))
             setBackgroundColor(0xFFFFFFFF.toInt())
         }
         val dashParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         dashParams.topMargin = dp(16)
         root.addView(dashboard, dashParams)
+
+        section("إجراءات سريعة")
+        button("＋ تسجيل نفايات جديدة") { dateInput.requestFocus(); quantityInput.requestFocus() }
+        button("↓ تصدير التقرير Excel/CSV") { shareCsv() }
+        button("حفظ نسخة احتياطية") { backupData() }
+        button("↑ استيراد نسخة احتياطية") { importBackup() }
 
         section("تسجيل عملية جديدة")
         dateInput = field("التاريخ (مثال: 2026-10-19)").apply {
@@ -110,8 +131,7 @@ class MainActivity : Activity() {
         recoveredInput = field("الكمية المسترجعة بالكيلوغرام")
         destinationSpinner = spinner(destinations)
         noteInput = field("ملاحظات (اختياري)")
-        button("＋ حفظ العملية") { saveRecord() }
-        button("↓ تصدير تقرير Excel/CSV") { shareCsv() }
+        button("حفظ العملية") { saveRecord() }
 
         section("سجل العمليات")
         listArea = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
