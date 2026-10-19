@@ -124,7 +124,7 @@ class MainActivity : Activity() {
         val e = EditText(this).apply {
             hint = hintText
             textSize = 15f
-            singleLine = true
+            setSingleLine(true)
             gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
             setPadding(dp(10), dp(4), dp(10), dp(4))
