@@ -39,7 +39,7 @@ class MainActivity : Activity() {
     private val departments = listOf("الإنتاج", "المخازن", "الصيانة", "المخبر", "معالجة المياه", "الإدارة", "أخرى")
     private val destinations = listOf("إعادة التدوير", "التثمين", "المعالجة", "التخلص النهائي", "مخزن مؤقت", "أخرى")
     private lateinit var root: LinearLayout
-    private lateinit var dashboard: TextView
+    private lateinit var dashboard: LinearLayout
     private lateinit var listArea: LinearLayout
     private lateinit var dateInput: EditText
     private lateinit var quantityInput: EditText
@@ -105,15 +105,42 @@ class MainActivity : Activity() {
         hero.addView(subtitle)
         root.addView(hero, matchWrap())
 
-        dashboard = TextView(this).apply {
-            textSize = 16f
-            setTextColor(0xFF23405A.toInt())
-            setPadding(dp(16), dp(16), dp(16), dp(16))
-            setBackgroundColor(0xFFFFFFFF.toInt())
+        dashboard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(2), dp(2), dp(2), dp(2))
         }
         val dashParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         dashParams.topMargin = dp(16)
         root.addView(dashboard, dashParams)
+
+        section("إجراءات سريعة")
+        val actionsRow1 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
+        actionsRow1.addView(actionTile("تسجيل نفايات", "＋") { quantityInput.requestFocus() }, LinearLayout.LayoutParams(0, dp(82), 1f))
+        actionsRow1.addView(actionTile("تصدير Excel/CSV", "↓") { shareCsv() }, LinearLayout.LayoutParams(0, dp(82), 1f))
+        root.addView(actionsRow1, matchWrap())
+        val actionsRow2 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
+        actionsRow2.addView(actionTile("حفظ نسخة احتياطية", "▣") { backupData() }, LinearLayout.LayoutParams(0, dp(72), 1f))
+        actionsRow2.addView(actionTile("استيراد نسخة", "↑") { importBackup() }, LinearLayout.LayoutParams(0, dp(72), 1f))
+        root.addView(actionsRow2, matchWrap())
+
+        val info = TextView(this).apply {
+            text = "تُحفظ السجلات على هذا الجهاز. استخدم «حفظ نسخة احتياطية» بانتظام، خصوصًا قبل حذف بيانات التطبيق أو تغيير الهاتف."
+            textSize = 15f
+            setTextColor(0xFF244F9B.toInt())
+            setPadding(dp(14), dp(14), dp(14), dp(14))
+            setBackgroundColor(0xFFEDF4FF.toInt())
+            gravity = Gravity.RIGHT
+        }
+        val infoParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        infoParams.topMargin = dp(12)
+        root.addView(info, infoParams)
+
+        section("الأقسام")
+        val tabs = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
+        tabs.addView(actionTile("لوحة القيادة", "▦") { scroll.smoothScrollTo(0, 0) }, LinearLayout.LayoutParams(0, dp(58), 1f))
+        tabs.addView(actionTile("تسجيل نفايات", "＋") { scroll.post { scroll.smoothScrollTo(0, dateInput.top) } }, LinearLayout.LayoutParams(0, dp(58), 1f))
+        tabs.addView(actionTile("السجلات", "☷") { scroll.post { scroll.smoothScrollTo(0, listArea.top) } }, LinearLayout.LayoutParams(0, dp(58), 1f))
+        root.addView(tabs, matchWrap())
 
         section("إجراءات سريعة")
         button("＋ تسجيل نفايات جديدة") { dateInput.requestFocus(); quantityInput.requestFocus() }
@@ -286,7 +313,68 @@ class MainActivity : Activity() {
         val total = records.sumOf { it.quantity }
         val recovered = records.sumOf { it.recovered }
         val rate = if (total > 0) recovered * 100.0 / total else 0.0
-        dashboard.text = "لوحة القيادة\n\nعدد السجلات:  ${records.size}\n\nإجمالي الكمية:  ${fmt(total)} كغ\n\nالكمية المسترجعة:  ${fmt(recovered)} كغ\n\nنسبة الاسترجاع:  ${String.format(Locale.US, "%.1f", rate)}%"
+        dashboard.removeAllViews()
+        val title = TextView(this).apply {
+            text = "لوحة القيادة"
+            textSize = 21f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(0xFF17334A.toInt())
+            gravity = Gravity.RIGHT
+            setPadding(0, dp(6), 0, dp(10))
+        }
+        dashboard.addView(title, matchWrap())
+        val row1 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
+        row1.addView(metricCard("عدد السجلات", records.size.toString()), LinearLayout.LayoutParams(0, dp(118), 1f))
+        row1.addView(metricCard("إجمالي الكمية (كغ)", fmt(total)), LinearLayout.LayoutParams(0, dp(118), 1f))
+        dashboard.addView(row1, matchWrap())
+        val row2 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
+        row2.addView(metricCard("الكمية المسترجعة (كغ)", fmt(recovered)), LinearLayout.LayoutParams(0, dp(118), 1f))
+        row2.addView(metricCard("نسبة الاسترجاع", String.format(Locale.US, "%.1f%%", rate)), LinearLayout.LayoutParams(0, dp(118), 1f))
+        dashboard.addView(row2, matchWrap())
+    }
+
+    private fun metricCard(label: String, value: String): View {
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            setPadding(dp(12), dp(12), dp(12), dp(10))
+            setBackgroundColor(0xFFFFFFFF.toInt())
+        }
+        val heading = TextView(this).apply {
+            text = label
+            textSize = 14f
+            setTextColor(0xFF6A7A8D.toInt())
+            gravity = Gravity.RIGHT
+        }
+        val number = TextView(this).apply {
+            text = value
+            textSize = 25f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(0xFF1D2D42.toInt())
+            gravity = Gravity.RIGHT
+            setPadding(0, dp(8), 0, 0)
+        }
+        card.addView(heading)
+        card.addView(number)
+        val params = LinearLayout.LayoutParams(0, dp(118), 1f)
+        params.setMargins(dp(4), dp(4), dp(4), dp(4))
+        card.layoutParams = params
+        return card
+    }
+
+    private fun actionTile(label: String, icon: String, action: () -> Unit): View {
+        val b = Button(this).apply {
+            text = "$icon  $label"
+            isAllCaps = false
+            textSize = 14f
+            setTextColor(if (label.contains("تصدير")) 0xFFFFFFFF.toInt() else 0xFF213348.toInt())
+            setBackgroundColor(if (label.contains("تصدير")) 0xFF087F8C.toInt() else 0xFFE1E8F0.toInt())
+            setOnClickListener { action() }
+        }
+        val p = LinearLayout.LayoutParams(0, dp(72), 1f)
+        p.setMargins(dp(4), dp(4), dp(4), dp(4))
+        b.layoutParams = p
+        return b
     }
 
     private fun backupData() {
