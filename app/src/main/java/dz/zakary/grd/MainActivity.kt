@@ -60,20 +60,45 @@ class MainActivity : Activity() {
         val scroll = ScrollView(this)
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(18), dp(16), dp(24))
+            setPadding(dp(18), dp(18), dp(18), dp(24))
             layoutDirection = View.LAYOUT_DIRECTION_RTL
-            setBackgroundColor(0xFFF4F7F8.toInt())
+            setBackgroundColor(0xFFF3F6FA.toInt())
         }
         scroll.addView(root)
         setContentView(scroll)
 
-        text("ZAKARY GRD", 27, true, 0xFF135D52.toInt())
-        text("نظام تسيير واسترجاع النفايات", 16, true)
-        text("نسخة أولية تعمل على الهاتف وتحفظ البيانات محليًا.", 13, false, 0xFF58656B.toInt())
+        val hero = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(24), dp(20), dp(24))
+            setBackgroundColor(0xFF087F8C.toInt())
+        }
+        val brand = TextView(this).apply {
+            text = "♻  ZAKARY GRD"
+            textSize = 28f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(0xFFFFFFFF.toInt())
+            gravity = Gravity.RIGHT
+        }
+        val subtitle = TextView(this).apply {
+            text = "نظام تسيير واسترجاع النفايات الصناعية"
+            textSize = 19f
+            setTextColor(0xFFE7FAFC.toInt())
+            gravity = Gravity.RIGHT
+            setPadding(0, dp(10), 0, 0)
+        }
+        hero.addView(brand)
+        hero.addView(subtitle)
+        root.addView(hero, matchWrap())
 
-        dashboard = text("", 15, true)
-        dashboard.setPadding(dp(12), dp(12), dp(12), dp(12))
-        dashboard.setBackgroundColor(0xFFE1F1EC.toInt())
+        dashboard = TextView(this).apply {
+            textSize = 15f
+            setTextColor(0xFF243246.toInt())
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+            setBackgroundColor(0xFFFFFFFF.toInt())
+        }
+        val dashParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        dashParams.topMargin = dp(16)
+        root.addView(dashboard, dashParams)
 
         section("تسجيل عملية جديدة")
         dateInput = field("التاريخ (مثال: 2026-10-19)").apply {
@@ -85,9 +110,8 @@ class MainActivity : Activity() {
         recoveredInput = field("الكمية المسترجعة بالكيلوغرام")
         destinationSpinner = spinner(destinations)
         noteInput = field("ملاحظات (اختياري)")
-
-        button("حفظ العملية") { saveRecord() }
-        button("تصدير ومشاركة تقرير CSV") { shareCsv() }
+        button("＋ حفظ العملية") { saveRecord() }
+        button("↓ تصدير تقرير Excel/CSV") { shareCsv() }
 
         section("سجل العمليات")
         listArea = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -113,9 +137,9 @@ class MainActivity : Activity() {
             text = value
             textSize = 18f
             setTypeface(null, Typeface.BOLD)
-            setTextColor(0xFF135D52.toInt())
+            setTextColor(0xFF123B53.toInt())
             gravity = Gravity.RIGHT
-            setPadding(0, dp(18), 0, dp(8))
+            setPadding(0, dp(20), 0, dp(10))
         }
         root.addView(t, matchWrap())
     }
@@ -152,11 +176,14 @@ class MainActivity : Activity() {
         val b = Button(this).apply {
             text = label
             isAllCaps = false
-            textSize = 15f
+            textSize = 16f
+            setTextColor(if (label.contains("تصدير")) 0xFFFFFFFF.toInt() else 0xFF183246.toInt())
+            setBackgroundColor(if (label.contains("تصدير")) 0xFF087F8C.toInt() else 0xFFE1E8F0.toInt())
+            setPadding(dp(10), dp(8), dp(10), dp(8))
             setOnClickListener { action() }
         }
-        val p = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        p.bottomMargin = dp(8)
+        val p = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(58))
+        p.bottomMargin = dp(10)
         root.addView(b, p)
     }
 
@@ -239,7 +266,7 @@ class MainActivity : Activity() {
         val total = records.sumOf { it.quantity }
         val recovered = records.sumOf { it.recovered }
         val rate = if (total > 0) recovered * 100.0 / total else 0.0
-        dashboard.text = "ملخص الأداء\nعدد العمليات: ${records.size}\nإجمالي النفايات: ${fmt(total)} كغ\nالكمية المسترجعة: ${fmt(recovered)} كغ\nغير المسترجعة: ${fmt(total - recovered)} كغ\nمعدل الاسترجاع: ${String.format(Locale.US, "%.1f", rate)}%"
+        dashboard.text = "لوحة القيادة\n\nعدد السجلات:  ${records.size}\n\nإجمالي الكمية:  ${fmt(total)} كغ\n\nالكمية المسترجعة:  ${fmt(recovered)} كغ\n\nنسبة الاسترجاع:  ${String.format(Locale.US, "%.1f", rate)}%"
     }
 
     private fun persistRecords() {
