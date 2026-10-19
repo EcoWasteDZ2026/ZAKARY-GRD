@@ -289,6 +289,57 @@ class MainActivity : Activity() {
         dashboard.text = "لوحة القيادة\n\nعدد السجلات:  ${records.size}\n\nإجمالي الكمية:  ${fmt(total)} كغ\n\nالكمية المسترجعة:  ${fmt(recovered)} كغ\n\nنسبة الاسترجاع:  ${String.format(Locale.US, "%.1f", rate)}%"
     }
 
+    private fun backupData() {
+        val array = JSONArray()
+        records.forEach { r ->
+            array.put(JSONObject().apply {
+                put("id", r.id); put("date", r.date); put("type", r.type)
+                put("department", r.department); put("quantity", r.quantity)
+                put("recovered", r.recovered); put("destination", r.destination); put("note", r.note)
+            })
+        }
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "ZAKARY GRD - Backup")
+            putExtra(Intent.EXTRA_TEXT, array.toString())
+        }
+        startActivity(Intent.createChooser(send, "حفظ النسخة الاحتياطية أو إرسالها"))
+    }
+
+    private fun importBackup() {
+        val input = EditText(this).apply {
+            hint = "الصق محتوى ملف النسخة الاحتياطية هنا"
+            minLines = 4
+            gravity = Gravity.TOP or Gravity.RIGHT
+        }
+        AlertDialog.Builder(this)
+            .setTitle("استيراد نسخة احتياطية")
+            .setMessage("افتح ملف النسخة الاحتياطية وانسخ محتواه، ثم الصقه هنا. سيُضاف المحتوى إلى السجلات الحالية.")
+            .setView(input)
+            .setNegativeButton("إلغاء", null)
+            .setPositiveButton("استيراد") { _, _ ->
+                try {
+                    val array = JSONArray(input.text.toString().trim())
+                    var added = 0
+                    for (i in 0 until array.length()) {
+                        val o = array.getJSONObject(i)
+                        val id = o.optLong("id", System.currentTimeMillis() + i)
+                        if (records.none { it.id == id }) {
+                            records.add(WasteRecord(id, o.optString("date"), o.optString("type"),
+                                o.optString("department"), o.optDouble("quantity"), o.optDouble("recovered"),
+                                o.optString("destination"), o.optString("note")))
+                            added++
+                        }
+                    }
+                    persistRecords()
+                    renderRecords()
+                    Toast.makeText(this, "تم استيراد $added سجل", Toast.LENGTH_LONG).show()
+                } catch (_: Exception) {
+                    Toast.makeText(this, "تعذر قراءة النسخة. تحقق من نسخ محتوى JSON كاملًا.", Toast.LENGTH_LONG).show()
+                }
+            }.show()
+    }
+
     private fun persistRecords() {
         val array = JSONArray()
         records.forEach { r ->
