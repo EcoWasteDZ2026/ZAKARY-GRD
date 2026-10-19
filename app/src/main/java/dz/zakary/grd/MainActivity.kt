@@ -73,7 +73,7 @@ class MainActivity : Activity() {
             setBackgroundColor(0xFF087F8C.toInt())
         }
         val brand = TextView(this).apply {
-            text = "♻  ZAKARY GRD"
+            text = "ZAKARY GRD  ♻️"
             textSize = 28f
             setTypeface(null, Typeface.BOLD)
             setTextColor(0xFFFFFFFF.toInt())
