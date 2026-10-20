@@ -142,12 +142,6 @@ class MainActivity : Activity() {
         tabs.addView(actionTile("السجلات", "☷") { scroll.post { scroll.smoothScrollTo(0, listArea.top) } }, LinearLayout.LayoutParams(0, dp(58), 1f))
         root.addView(tabs, matchWrap())
 
-        section("إجراءات سريعة")
-        button("＋ تسجيل نفايات جديدة") { dateInput.requestFocus(); quantityInput.requestFocus() }
-        button("↓ تصدير التقرير Excel/CSV") { shareCsv() }
-        button("حفظ نسخة احتياطية") { backupData() }
-        button("↑ استيراد نسخة احتياطية") { importBackup() }
-
         section("تسجيل عملية جديدة")
         dateInput = field("التاريخ (مثال: 2026-10-19)").apply {
             setText(SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()))
