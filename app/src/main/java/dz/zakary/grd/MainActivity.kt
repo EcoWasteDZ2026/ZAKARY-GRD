@@ -383,10 +383,35 @@ class MainActivity : Activity() {
         typesBox.addView(TextView(this).apply { text="ملخص حسب نوع النفايات"; textSize=18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()) }, matchWrap())
         types.distinct().forEach { type ->
             val subset = records.filter { it.type == type }
-            if (subset.isNotEmpty()) typesBox.addView(TextView(this).apply {
-                text = "$type: ${fmt(subset.sumOf { it.quantity })} كغ منتج | ${fmt(subset.sumOf { it.recovered })} كغ مسترجع"
-                textSize = 14f; setTextColor(0xFF243746.toInt()); setPadding(0, dp(5), 0, dp(5))
-            }, matchWrap())
+            if (subset.isNotEmpty()) {
+                val qty = subset.sumOf { it.quantity }
+                val rec = subset.sumOf { it.recovered }
+                val costType = subset.sumOf { it.cost }
+                val incomeType = subset.sumOf { it.income }
+                val netType = costType - incomeType
+                val perKg = if (qty > 0) costType / qty else 0.0
+                val typeCard = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    layoutDirection = View.LAYOUT_DIRECTION_RTL
+                    setPadding(dp(10), dp(9), dp(10), dp(9))
+                    setBackgroundColor(0xFFF1F6F5.toInt())
+                }
+                typeCard.addView(TextView(this).apply {
+                    text = "♻ $type"
+                    textSize = 16f
+                    setTypeface(null, Typeface.BOLD)
+                    setTextColor(0xFF247A5A.toInt())
+                }, matchWrap())
+                typeCard.addView(TextView(this).apply {
+                    text = "منتج: ${fmt(qty)} كغ  |  مسترجع: ${fmt(rec)} كغ\nالتكاليف: ${fmt(costType)} دج\nالمداخيل: ${fmt(incomeType)} دج  |  صافي التكلفة: ${fmt(netType)} دج\nتكلفة الكيلوغرام الواحد: ${fmt(perKg)} دج/كغ"
+                    textSize = 14f
+                    setTextColor(0xFF243746.toInt())
+                    setPadding(0, dp(5), 0, 0)
+                }, matchWrap())
+                val cp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                cp.bottomMargin = dp(7)
+                typesBox.addView(typeCard, cp)
+            }
         }
         dashboardStats.addView(typesBox, matchWrap())
     }
@@ -412,7 +437,40 @@ class MainActivity : Activity() {
         financePage.addView(metric("صافي التكاليف (التكاليف - المداخيل)", "${fmt(net)} دج"), matchWrap())
         financePage.addView(actionButton("＋ إضافة عملية مالية عبر تسجيل النفايات") { showPage("form") }, matchWrap())
         financePage.addView(TextView(this).apply {
-            text = "أدخل التكلفة والمداخيل عند تسجيل كل عملية. القيم هنا مجموع ما سجلته فقط، وليست بيانات مصنع حقيقية."
+            text = "تفصيل مالي مستقل لكل نوع نفايات"
+            textSize = 19f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()); setPadding(0, dp(14), 0, dp(8))
+        }, matchWrap())
+        types.distinct().forEach { type ->
+            val subset = records.filter { it.type == type }
+            if (subset.isNotEmpty()) {
+                val qty = subset.sumOf { it.quantity }
+                val recovered = subset.sumOf { it.recovered }
+                val costsForType = subset.sumOf { it.cost }
+                val incomeForType = subset.sumOf { it.income }
+                val netForType = costsForType - incomeForType
+                val costPerKg = if (qty > 0) costsForType / qty else 0.0
+                val recoveredCostPerKg = if (recovered > 0) costsForType / recovered else 0.0
+                val box = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    layoutDirection = View.LAYOUT_DIRECTION_RTL
+                    setPadding(dp(13), dp(12), dp(13), dp(12))
+                    setBackgroundColor(0xFFFFFFFF.toInt())
+                }
+                box.addView(TextView(this).apply {
+                    text = "♻ $type"
+                    textSize = 18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF247A5A.toInt())
+                }, matchWrap())
+                box.addView(TextView(this).apply {
+                    text = "الكمية المنتجة: ${fmt(qty)} كغ\nالكمية المسترجعة: ${fmt(recovered)} كغ\nتكاليف هذا النوع: ${fmt(costsForType)} دج\nمداخيل هذا النوع: ${fmt(incomeForType)} دج\nصافي تكلفة هذا النوع: ${fmt(netForType)} دج\nتكلفة كل 1 كغ منتج: ${fmt(costPerKg)} دج/كغ\nتكلفة كل 1 كغ مسترجع (مؤشر تقريبي): ${fmt(recoveredCostPerKg)} دج/كغ"
+                    textSize = 14f; setTextColor(0xFF243746.toInt()); setPadding(0, dp(7), 0, 0)
+                }, matchWrap())
+                val bp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                bp.bottomMargin = dp(9)
+                financePage.addView(box, bp)
+            }
+        }
+        financePage.addView(TextView(this).apply {
+            text = "تُحسب تكلفة كل نوع وحده من العمليات المسجلة لذلك النوع، ولا تُوزَّع تكلفة نوع على الأنواع الأخرى. تكلفة الكيلوغرام = تكاليف النوع ÷ كميته المنتجة. أدخل تكاليف النقل والمعالجة لكل سجل بدقة، فهذه الحسابات تعتمد على البيانات التي تدخلها."
             textSize = 14f; setTextColor(0xFF795500.toInt()); setPadding(dp(12), dp(12), dp(12), dp(12)); setBackgroundColor(0xFFFFF2CC.toInt())
         }, matchWrap())
     }
