@@ -2,7 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
         android:allowBackup="true"
-        android:label="ZAKARY GRD"
+        android:label="ZAKARY GRD ♻"
+        android:icon="@drawable/ic_zakary_grd"
+        android:roundIcon="@drawable/ic_zakary_grd"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity
