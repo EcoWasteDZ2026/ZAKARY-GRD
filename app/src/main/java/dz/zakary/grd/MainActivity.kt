@@ -436,8 +436,14 @@ class MainActivity : Activity() {
         val q = EditText(this).apply { hint = "الكمية الإجمالية كغ"; setText(fmt(r.quantity)) }
         val rec = EditText(this).apply { hint = "الكمية المسترجعة كغ"; setText(fmt(r.recovered)) }
         val cost = EditText(this).apply { hint = "التكلفة دج"; setText(fmt(r.cost)) }
-        val income = EditText(this).apply { hint = "المداخيل دج"; setText(fmt(r.income)) }
-        listOf(q, rec, cost, income).forEach { it.inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL; panel.addView(it) }
+        val income = EditText(this).apply { hint = "المداخيل دج (تحسب من العقد)"; setText(fmt(r.income)) }
+        val dispatch = EditText(this).apply { hint = "مرجع وصل الخروج"; setText(r.dispatchReference) }
+        val invoiceNo = EditText(this).apply { hint = "رقم الفاتورة"; setText(r.invoiceNumber) }
+        val invoiceDate = EditText(this).apply { hint = "تاريخ الفاتورة YYYY-MM-DD"; setText(r.invoiceDate) }
+        val paymentStatus = EditText(this).apply { hint = "حالة الدفع"; setText(r.paymentStatus) }
+        val paymentDate = EditText(this).apply { hint = "تاريخ الدفع YYYY-MM-DD"; setText(r.paymentDate) }
+        listOf(q, rec, cost, income, dispatch, invoiceNo, invoiceDate, paymentStatus, paymentDate).forEach { panel.addView(it) }
+        listOf(q, rec, cost, income).forEach { it.inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
         AlertDialog.Builder(this).setTitle("تعديل ${r.type}").setView(panel)
             .setNegativeButton("إلغاء", null)
             .setPositiveButton("حفظ") { _, _ ->
@@ -450,7 +456,7 @@ class MainActivity : Activity() {
                 } else {
                     val ni = if (r.operationType == "بيع مباشر") nq * (contractItem(r.type)?.price ?: 0.0) else 0.0
                     val index = records.indexOfFirst { it.id == r.id }
-                    if (index >= 0) records[index] = r.copy(quantity=nq, recovered=nr, cost=nc, income=ni)
+                    if (index >= 0) records[index] = r.copy(quantity=nq, recovered=nr, cost=nc, income=ni, dispatchReference=dispatch.text.toString().trim(), invoiceNumber=invoiceNo.text.toString().trim(), invoiceDate=invoiceDate.text.toString().trim(), paymentStatus=paymentStatus.text.toString().trim().ifBlank { "غير محدد" }, paymentDate=paymentDate.text.toString().trim())
                     cloud.markRecordDirty(r.id)
                     persistRecords(); renderRecords(); refreshDashboard(); refreshFinance()
                     if (cloud.connected()) syncCloud(false)
