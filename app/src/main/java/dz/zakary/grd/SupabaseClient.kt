@@ -15,6 +15,8 @@ class SupabaseClient(context: Context) {
     fun configured() = !prefs.getString("url", "").isNullOrBlank() && !prefs.getString("key", "").isNullOrBlank()
     fun connected() = configured() && !prefs.getString("access_token", "").isNullOrBlank()
     fun endpoint() = prefs.getString("url", "") ?: ""
+    fun projectUrl() = prefs.getString("url", "") ?: ""
+    fun publicKey() = prefs.getString("key", "") ?: ""
 
     @Synchronized fun signIn(projectUrl: String, publicKey: String, email: String, password: String) {
         val base = projectUrl.trim().trimEnd('/')
