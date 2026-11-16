@@ -100,7 +100,7 @@ class SupabaseClient(context: Context) {
         }
 
         val contractPayload = JSONArray()
-        localContracts.filter { dirtyContracts.contains(it.name) }.forEach { item ->
+        localContracts.filter { dirtyContracts.contains(it.name) || dirtyContracts.contains("*") }.forEach { item ->
             contractPayload.put(JSONObject().put("user_id", uid).put("name", item.name).put("price", item.price)
                 .put("unit", item.unit).put("method", item.method))
         }
