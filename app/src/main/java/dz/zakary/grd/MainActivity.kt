@@ -427,10 +427,11 @@ class MainActivity : Activity() {
                 val nq = q.text.toString().replace(',', '.').toDoubleOrNull()
                 val nr = rec.text.toString().replace(',', '.').toDoubleOrNull()
                 val nc = cost.text.toString().replace(',', '.').toDoubleOrNull()
-                val ni = income.text.toString().replace(',', '.').toDoubleOrNull()
-                if (nq == null || nr == null || nc == null || ni == null || nq <= 0 || nr < 0 || nr > nq || nc < 0 || ni < 0) {
+                val niInput = income.text.toString().replace(',', '.').toDoubleOrNull()
+                if (nq == null || nr == null || nc == null || niInput == null || nq <= 0 || nr < 0 || nr > nq || nc < 0 || niInput < 0) {
                     Toast.makeText(this, "قيم غير صحيحة؛ لم يتم حفظ التعديل.", Toast.LENGTH_LONG).show()
                 } else {
+                    val ni = if (r.operationType == "بيع مباشر") nq * (contractItem(r.type)?.price ?: 0.0) else 0.0
                     val index = records.indexOfFirst { it.id == r.id }
                     if (index >= 0) records[index] = r.copy(quantity=nq, recovered=nr, cost=nc, income=ni)
                     cloud.markRecordDirty(r.id)
