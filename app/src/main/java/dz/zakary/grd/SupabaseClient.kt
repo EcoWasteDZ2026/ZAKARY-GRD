@@ -64,7 +64,7 @@ class SupabaseClient(context: Context) {
         if (body != null) { c.doOutput = true; c.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) } }
         val code = c.responseCode
         val stream = if (code in 200..299) c.inputStream else c.errorStream
-        val text = stream?.bufferedReader(Charsets.UTF_8)?.use(BufferedReader::readText) ?: ""
+        val text = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
         c.disconnect()
         if (code !in 200..299) throw IllegalStateException("خادم المزامنة ($code): " + text.take(500))
         return text
