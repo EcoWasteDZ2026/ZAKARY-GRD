@@ -23,12 +23,12 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
-data class ContractItem(val name: String, var price: Double, var unit: String, var method: String)
+data class ContractItem(val name: String, var price: Double, var unit: String, var method: String, var companyName: String = "")
 
 data class WasteRecord(
     val id: String, val date: String, val type: String, val department: String,
     val quantity: Double, val recovered: Double, val destination: String,
-    val cost: Double, val income: Double, val note: String
+    val cost: Double, val income: Double, val note: String, val buyerCompany: String = "", val operationType: String = "بيع مباشر"
 )
 
 class MainActivity : Activity() {
@@ -62,6 +62,8 @@ class MainActivity : Activity() {
     private lateinit var recoveredInput: EditText
     private lateinit var costInput: EditText
     private lateinit var incomeInput: EditText
+    private lateinit var buyerInput: EditText
+    private lateinit var operationSpinner: Spinner
     private lateinit var noteInput: EditText
     private lateinit var typeSpinner: Spinner
     private lateinit var departmentSpinner: Spinner
@@ -168,7 +170,25 @@ class MainActivity : Activity() {
         recoveredInput = field(formPage, "الكمية المسترجعة بالكيلوغرام", true)
         destinationSpinner = spinner(formPage, destinations)
         costInput = field(formPage, "تكلفة المعالجة أو النقل (دج)", true)
-        incomeInput = field(formPage, "مداخيل التثمين أو البيع (دج)", true)
+        incomeInput = field(formPage, "مداخيل البيع (تحسب آلياً من العقد)", true)
+        operationSpinner = spinner(formPage, listOf("بيع مباشر", "إزالة مجانية", "تدوير/تثمين داخلي", "معالجة/تخلص"))
+        buyerInput = field(formPage, "الشركة المشترية (للبيع فقط)")
+        typeSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val item = contractItem(typeSpinner.selectedItem?.toString() ?: "")
+                if (item != null) {
+                    buyerInput.setText(if (item.method == "بيع") item.companyName else "")
+                    operationSpinner.setSelection(if (item.method == "بيع") 0 else 1)
+                    updateIncomePreview()
+                }
+            }
+        }
+        quantityInput.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { updateIncomePreview() }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
         noteInput = field(formPage, "ملاحظات أو رقم وصل (اختياري)")
         formPage.addView(actionButton("حفظ العملية") { saveRecord() }, matchWrap())
         formPage.addView(actionButton("مسح حقول الإدخال") { clearForm() }, matchWrap())
@@ -284,17 +304,25 @@ class MainActivity : Activity() {
         val recovered = number(recoveredInput)
         val cost = number(costInput, 0.0)
         val selectedType = typeSpinner.selectedItem.toString()
-        val defaultIncome = contractItem(selectedType)?.let { quantity?.times(it.price) } ?: 0.0
-        val income = number(incomeInput, defaultIncome)
-        if (date.isBlank() || quantity == null || recovered == null || cost == null || income == null ||
-            quantity <= 0 || recovered < 0 || recovered > quantity || cost < 0 || income < 0) {
+        val operation = operationSpinner.selectedItem.toString()
+        val item = contractItem(selectedType)
+        val buyer = buyerInput.text.toString().trim()
+        val income = if (operation == "بيع مباشر") {
+            if (item == null || item.method != "بيع") {
+                Toast.makeText(this, "لا يمكن بيع هذا النوع دون بند بيع في العقد.", Toast.LENGTH_LONG).show(); return
+            }
+            if (buyer.isBlank()) { Toast.makeText(this, "أدخل الشركة المشترية.", Toast.LENGTH_LONG).show(); return }
+            (quantity ?: 0.0) * item.price
+        } else 0.0
+        if (date.isBlank() || quantity == null || recovered == null || cost == null ||
+            quantity <= 0 || recovered < 0 || recovered > quantity || cost < 0) {
             Toast.makeText(this, "تحقق من التاريخ والكميات والتكاليف. المسترجع يجب ألا يتجاوز الإجمالي.", Toast.LENGTH_LONG).show()
             return
         }
         val newId = UUID.randomUUID().toString()
         records.add(0, WasteRecord(newId, date, selectedType,
             departmentSpinner.selectedItem.toString(), quantity, recovered, destinationSpinner.selectedItem.toString(),
-            cost, income, noteInput.text.toString().trim()))
+            cost, income, noteInput.text.toString().trim(), if (operation == "بيع مباشر") buyer else "", operation))
         persistRecords()
         cloud.markRecordDirty(newId)
         if (cloud.connected()) syncCloud(false)
@@ -306,12 +334,23 @@ class MainActivity : Activity() {
         showPage("dashboard")
     }
 
+    private fun updateIncomePreview() {
+        if (!::incomeInput.isInitialized || !::typeSpinner.isInitialized || !::quantityInput.isInitialized) return
+        val item = contractItem(typeSpinner.selectedItem?.toString() ?: "")
+        val q = number(quantityInput, 0.0) ?: 0.0
+        val sale = ::operationSpinner.isInitialized && operationSpinner.selectedItem?.toString() == "بيع مباشر"
+        incomeInput.setText(if (sale && item?.method == "بيع") fmt(q * item.price) else "0")
+        if (sale && item != null && item.method == "بيع" && ::buyerInput.isInitialized && buyerInput.text.isNullOrBlank()) buyerInput.setText(item.companyName)
+    }
+
     private fun clearForm() {
         dateInput.setText(today())
         quantityInput.setText("")
         recoveredInput.setText("")
         costInput.setText("")
-        incomeInput.setText("")
+        incomeInput.setText("0")
+        buyerInput.setText("")
+        operationSpinner.setSelection(0)
         noteInput.setText("")
         typeSpinner.setSelection(0)
         departmentSpinner.setSelection(0)
@@ -347,7 +386,7 @@ class MainActivity : Activity() {
                 setTextColor(0xFF247A5A.toInt())
             }, matchWrap())
             card.addView(TextView(this).apply {
-                text = "القسم: ${r.department}\nالإجمالي: ${fmt(r.quantity)} كغ | المسترجع: ${fmt(r.recovered)} كغ\nالوجهة: ${r.destination}\nالتكلفة: ${fmt(r.cost)} دج | المداخيل: ${fmt(r.income)} دج" +
+                text = "القسم: ${r.department}\nالإجمالي: ${fmt(r.quantity)} ${contractItem(r.type)?.unit ?: "وحدة"} | المسترجع: ${fmt(r.recovered)}\nالعملية: ${r.operationType} | الشركة: ${r.buyerCompany.ifBlank { "—" }}\nالوجهة/وصل الخروج: ${r.destination}\nالتكلفة: ${fmt(r.cost)} دج | المداخيل: ${fmt(r.income)} دج" +
                     if (r.note.isBlank()) "" else "\nملاحظات: ${r.note}"
                 textSize = 14f
                 setTextColor(0xFF243746.toInt())
@@ -514,7 +553,7 @@ class MainActivity : Activity() {
 
     private fun persistContracts() {
         val a = JSONArray()
-        contractItems.forEach { c -> a.put(JSONObject().apply { put("name",c.name); put("price",c.price); put("unit",c.unit); put("method",c.method) }) }
+        contractItems.forEach { c -> a.put(JSONObject().apply { put("name",c.name); put("price",c.price); put("unit",c.unit); put("method",c.method); put("companyName",c.companyName) }) }
         getSharedPreferences("henkel_contracts", MODE_PRIVATE).edit().putString("items", a.toString()).apply()
     }
     private fun loadContracts() {
@@ -522,7 +561,7 @@ class MainActivity : Activity() {
             val raw = getSharedPreferences("henkel_contracts", MODE_PRIVATE).getString("items", null) ?: return
             val a = JSONArray(raw); if (a.length() == 0) return
             contractItems.clear()
-            for (i in 0 until a.length()) { val o=a.getJSONObject(i); contractItems.add(ContractItem(o.optString("name"),o.optDouble("price"),o.optString("unit","كغ"),o.optString("method","بيع"))) }
+            for (i in 0 until a.length()) { val o=a.getJSONObject(i); contractItems.add(ContractItem(o.optString("name"),o.optDouble("price"),o.optString("unit","كغ"),o.optString("method","بيع"),o.optString("companyName"))) }
         } catch (_: Exception) { }
     }
     private fun refreshContracts() {
@@ -531,7 +570,7 @@ class MainActivity : Activity() {
         contractItems.forEach { c ->
             val box = LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(12),dp(10),dp(12),dp(10)); setBackgroundColor(0xFFFFFFFF.toInt()) }
             box.addView(TextView(this).apply { text=c.name; textSize=16f; setTypeface(null,Typeface.BOLD); setTextColor(0xFF247A5A.toInt()) }, matchWrap())
-            box.addView(TextView(this).apply { text=if(c.method=="إزالة مجانية") "طريقة التعامل: إزالة مجانية — دون مقابل" else "السعر: ${fmt(c.price)} دج / ${c.unit}  •  طريقة التعامل: ${c.method}"; textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(5),0,0) }, matchWrap())
+            box.addView(TextView(this).apply { text="الشركة: ${c.companyName.ifBlank { "غير محددة" }}\n"+(if(c.method=="إزالة مجانية") "طريقة التعامل: إزالة مجانية — دون مقابل" else "السعر: ${fmt(c.price)} دج / ${c.unit}  •  طريقة التعامل: ${c.method}"); textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(5),0,0) }, matchWrap())
             val p=LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); p.bottomMargin=dp(8); contractsPage.addView(box,p)
         }
         contractsPage.addView(TextView(this).apply { text="ملاحظات العقد: الفوترة في نهاية الشهر، والدفع خلال 10 أيام من استلام الفاتورة. أوقات الجمع المذكورة: الأحد إلى الخميس، 08:00–16:00. مدة العقد سنة قابلة للتجديد باتفاق الطرفين وملحق. لا تعتمد هذه الملخصات بدل العقد الأصلي الموقع."; textSize=13f; setTextColor(0xFF795500.toInt()); setPadding(dp(12),dp(12),dp(12),dp(12)); setBackgroundColor(0xFFFFF2CC.toInt()) }, matchWrap())
@@ -556,12 +595,13 @@ class MainActivity : Activity() {
         val price=EditText(this).apply { hint="السعر بالدينار (0 للإزالة المجانية)"; inputType=android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
         val unit=EditText(this).apply { hint="الوحدة: كغ أو وحدة"; setText("كغ") }
         val method=EditText(this).apply { hint="طريقة التعامل: بيع / إزالة مجانية"; setText("بيع") }
-        listOf(name,price,unit,method).forEach { panel.addView(it) }
+        val company=EditText(this).apply { hint="الشركة المتعاقدة / المشترية"; setText("SNC Groupe EL BADISSIA") }
+        listOf(name,price,unit,method,company).forEach { panel.addView(it) }
         AlertDialog.Builder(this).setTitle("إضافة بند تعاقدي جديد").setView(panel).setNegativeButton("إلغاء",null)
             .setPositiveButton("إضافة") { _, _ ->
-                val n=name.text.toString().trim(); val p=price.text.toString().replace(',','.').toDoubleOrNull(); val u=unit.text.toString().trim().ifBlank{"كغ"}; val m=method.text.toString().trim().ifBlank{"بيع"}
+                val n=name.text.toString().trim(); val p=price.text.toString().replace(',','.').toDoubleOrNull(); val u=unit.text.toString().trim().ifBlank{"كغ"}; val m=method.text.toString().trim().ifBlank{"بيع"}; val co=company.text.toString().trim()
                 if(n.isBlank() || p==null || p<0) Toast.makeText(this,"أدخل اسم البند وسعراً صحيحاً",Toast.LENGTH_LONG).show()
-                else { if(contractItems.any{it.name==n}) Toast.makeText(this,"هذا البند موجود مسبقاً",Toast.LENGTH_SHORT).show() else { contractItems.add(ContractItem(n,p,u,m)); typeSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,types); persistContracts(); cloud.markContractsDirty(); refreshContracts(); if(cloud.connected()) syncCloud(false); Toast.makeText(this,"تمت إضافة البند",Toast.LENGTH_SHORT).show() } }
+                else { if(contractItems.any{it.name==n}) Toast.makeText(this,"هذا البند موجود مسبقاً",Toast.LENGTH_SHORT).show() else { contractItems.add(ContractItem(n,p,u,m,co)); typeSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,types); persistContracts(); cloud.markContractsDirty(); refreshContracts(); if(cloud.connected()) syncCloud(false); Toast.makeText(this,"تمت إضافة البند",Toast.LENGTH_SHORT).show() } }
             }.show()
     }
     private fun showContractTerms() {
@@ -618,14 +658,14 @@ class MainActivity : Activity() {
         records.forEach { r -> a.put(JSONObject().apply {
             put("id",r.id); put("date",r.date); put("type",r.type); put("department",r.department)
             put("quantity",r.quantity); put("recovered",r.recovered); put("destination",r.destination)
-            put("cost",r.cost); put("income",r.income); put("note",r.note)
+            put("cost",r.cost); put("income",r.income); put("note",r.note); put("buyerCompany",r.buyerCompany); put("operationType",r.operationType)
         }) }
         return a
     }
 
     private fun readRecord(o: JSONObject, id: String) = WasteRecord(id, o.optString("date"), o.optString("type"),
         o.optString("department"), o.optDouble("quantity"), o.optDouble("recovered"), o.optString("destination"),
-        o.optDouble("cost"), o.optDouble("income"), o.optString("note"))
+        o.optDouble("cost"), o.optDouble("income"), o.optString("note"), o.optString("buyerCompany"), o.optString("operationType", "بيع مباشر"))
 
     private fun persistRecords() {
         getSharedPreferences("zakary_grd", MODE_PRIVATE).edit().putString("records", toJson().toString()).apply()
