@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:label="HENKEL ALGÉRIE • ZAKARY GRD"
         android:icon="@drawable/ic_zakary_grd"
         android:roundIcon="@drawable/ic_zakary_grd"
