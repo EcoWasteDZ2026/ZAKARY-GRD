@@ -527,6 +527,18 @@ class MainActivity : Activity() {
         dashboardStats.addView(typesBox, matchWrap())
     }
 
+    private fun syncProductionCloud() {
+        try {
+            productionByMonth.forEach { (month,quantity) -> cloud.saveProduction(month,quantity) }
+            val remote=cloud.fetchProduction()
+            productionByMonth.clear()
+            productionByMonth.putAll(remote)
+            persistProduction()
+        } catch (_: Exception) {
+            // Keep locally saved monthly production if the optional production table has not been migrated yet.
+        }
+    }
+
     private fun saveProductionMonth() {
         val month=today().take(7)
         val value=number(productionInput)
@@ -765,6 +777,7 @@ class MainActivity : Activity() {
                             try {
                                 cloud.signIn(u, k, e, pw)
                                 val result = cloud.sync(records.toList(), contractItems.toList())
+                                syncProductionCloud()
                                 runOnUiThread {
                                     records.clear(); records.addAll(result.first)
                                     contractItems.clear(); contractItems.addAll(result.second)
@@ -791,6 +804,7 @@ class MainActivity : Activity() {
         Thread {
             try {
                 val result = cloud.sync(records.toList(), contractItems.toList())
+                syncProductionCloud()
                 runOnUiThread {
                     records.clear(); records.addAll(result.first)
                     contractItems.clear(); contractItems.addAll(result.second)
