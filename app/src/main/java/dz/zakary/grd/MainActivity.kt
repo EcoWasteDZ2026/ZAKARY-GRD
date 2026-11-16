@@ -43,12 +43,12 @@ class MainActivity : Activity() {
         ContractItem("أكياس Big Bags", 4.80, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
         ContractItem("براميل معدنية", 216.0, "وحدة", "بيع", "SNC Groupe EL BADISSIA"),
         ContractItem("نفايات المنصات الخشبية وبقايا الخشب", 2.50, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
-        ContractItem("أكياس وأغلفة PE ملوثة بالمنظفات وغير قابلة للاسترجاع", 0.0, "حسب الكمية", "إزالة مجانية")
+        ContractItem("أكياس وأغلفة PE ملوثة بالمنظفات وغير قابلة للاسترجاع", 0.0, "حسب الكمية", "غير قابل للبيع")
     )
     private val types get() = contractItems.map { it.name } + listOf("نفايات صناعية أخرى (تُضاف لاحقاً)")
     private fun contractItem(name: String) = contractItems.find { it.name == name }
     private val departments = listOf("الإنتاج", "المخازن", "الصيانة", "المخبر", "معالجة المياه", "الإدارة", "أخرى")
-    private val destinations = listOf("إعادة التدوير", "التثمين", "المعالجة", "التخلص النهائي", "مخزن مؤقت", "أخرى")
+    private val destinations = listOf("خروج إلى الشركة المشترية", "أخرى")
     private val pages = mutableMapOf<String, LinearLayout>()
     private lateinit var root: LinearLayout
     private lateinit var contentHost: LinearLayout
@@ -182,7 +182,7 @@ class MainActivity : Activity() {
         destinationSpinner = spinner(formPage, destinations)
         costInput = field(formPage, "تكلفة المعالجة أو النقل (دج)", true)
         incomeInput = field(formPage, "مداخيل البيع (تحسب آلياً من العقد)", true)
-        operationSpinner = spinner(formPage, listOf("بيع مباشر", "إزالة مجانية", "تدوير/تثمين داخلي", "معالجة/تخلص"))
+        operationSpinner = spinner(formPage, listOf("توليد/تسجيل الكمية المتولدة", "بيع مباشر"))
         buyerInput = field(formPage, "الشركة المشترية (للبيع فقط)")
         typeSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
@@ -190,7 +190,7 @@ class MainActivity : Activity() {
                 val item = contractItem(typeSpinner.selectedItem?.toString() ?: "")
                 if (item != null) {
                     buyerInput.setText(if (item.method == "بيع") item.companyName else "")
-                    operationSpinner.setSelection(if (item.method == "بيع") 0 else 1)
+                    operationSpinner.setSelection(if (item.method == "بيع") 1 else 0)
                     updateIncomePreview()
                 }
             }
@@ -636,7 +636,7 @@ class MainActivity : Activity() {
         contractItems.forEach { c ->
             val box = LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(12),dp(10),dp(12),dp(10)); setBackgroundColor(0xFFFFFFFF.toInt()) }
             box.addView(TextView(this).apply { text=c.name; textSize=16f; setTypeface(null,Typeface.BOLD); setTextColor(0xFF247A5A.toInt()) }, matchWrap())
-            box.addView(TextView(this).apply { text="الشركة: ${c.companyName.ifBlank { "غير محددة" }}\n"+(if(c.method=="إزالة مجانية") "طريقة التعامل: إزالة مجانية — دون مقابل" else "السعر: ${fmt(c.price)} دج / ${c.unit}  •  طريقة التعامل: ${c.method}"); textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(5),0,0) }, matchWrap())
+            box.addView(TextView(this).apply { text="الشركة: ${c.companyName.ifBlank { "غير محددة" }}\n"+(if(c.method=="غير قابل للبيع") "هذا النوع غير مدرج للبيع في العقد" else "السعر: ${fmt(c.price)} دج / ${c.unit}  •  طريقة التعامل: ${c.method}"); textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(5),0,0) }, matchWrap())
             val p=LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); p.bottomMargin=dp(8); contractsPage.addView(box,p)
         }
         contractsPage.addView(TextView(this).apply { text="ملاحظات العقد: الفوترة في نهاية الشهر، والدفع خلال 10 أيام من استلام الفاتورة. أوقات الجمع المذكورة: الأحد إلى الخميس، 08:00–16:00. مدة العقد سنة قابلة للتجديد باتفاق الطرفين وملحق. لا تعتمد هذه الملخصات بدل العقد الأصلي الموقع."; textSize=13f; setTextColor(0xFF795500.toInt()); setPadding(dp(12),dp(12),dp(12),dp(12)); setBackgroundColor(0xFFFFF2CC.toInt()) }, matchWrap())
