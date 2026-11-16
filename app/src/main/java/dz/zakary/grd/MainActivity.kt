@@ -36,10 +36,10 @@ class MainActivity : Activity() {
     private val records = mutableListOf<WasteRecord>()
     private val contractItems = mutableListOf(
         ContractItem("صناديق كرتونية ونفايات الورق", 2.40, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
-        ContractItem("أغلفة وأفلام بلاستيكية", 5.40, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
+        ContractItem("الأغلفة البلاستيكية (المطاطية وأغلفة التغليف)", 5.40, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
         ContractItem("أكياس Big Bags", 4.80, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
         ContractItem("براميل معدنية", 216.0, "وحدة", "بيع", "SNC Groupe EL BADISSIA"),
-        ContractItem("منصات خشبية وبقايا الخشب", 2.50, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
+        ContractItem("نفايات المنصات الخشبية وبقايا الخشب", 2.50, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
         ContractItem("أكياس وأغلفة PE ملوثة بالمنظفات وغير قابلة للاسترجاع", 0.0, "حسب الكمية", "إزالة مجانية")
     )
     private val types get() = contractItems.map { it.name } + listOf("نفايات صناعية أخرى (تُضاف لاحقاً)")
@@ -311,7 +311,7 @@ class MainActivity : Activity() {
             if (item == null || item.method != "بيع") {
                 Toast.makeText(this, "لا يمكن بيع هذا النوع دون بند بيع في العقد.", Toast.LENGTH_LONG).show(); return
             }
-            if (buyer.isBlank()) { Toast.makeText(this, "أدخل الشركة المشترية.", Toast.LENGTH_LONG).show(); return }
+            if (buyer.isBlank() || buyer != item.companyName) { Toast.makeText(this, "الشركة المشترية يجب أن تطابق الشركة المحددة في العقد.", Toast.LENGTH_LONG).show(); return }
             (quantity ?: 0.0) * item.price
         } else 0.0
         if (date.isBlank() || quantity == null || recovered == null || cost == null ||
@@ -444,15 +444,21 @@ class MainActivity : Activity() {
     private fun refreshDashboard() {
         if (!::dashboardStats.isInitialized) return
         dashboardStats.removeAllViews()
-        val total = records.sumOf { it.quantity }
-        val recovered = records.sumOf { it.recovered }
+        val unitGroups = records.groupBy { contractItem(it.type)?.unit ?: "وحدة" }
+        fun unitTotals(selector: (WasteRecord) -> Double) = unitGroups.entries.joinToString(" + ") { (unit, rows) -> "${fmt(rows.sumOf(selector))} $unit" }.ifBlank { "0" }
+        val kgRows = records.filter { contractItem(it.type)?.unit == "كغ" }
+        val kgTotal = kgRows.sumOf { it.quantity }
+        val kgRecovered = kgRows.sumOf { it.recovered }
         val costs = records.sumOf { it.cost }
         val income = records.sumOf { it.income }
-        val rate = if (total > 0) recovered * 100 / total else 0.0
-        dashboardStats.addView(metric("إجمالي النفايات المنتجة", "${fmt(total)} كغ"), matchWrap())
-        dashboardStats.addView(metric("إجمالي الكمية المسترجعة", "${fmt(recovered)} كغ"), matchWrap())
-        dashboardStats.addView(metric("الكمية المعالجة / المتخلص منها", "${fmt((total-recovered).coerceAtLeast(0.0))} كغ"), matchWrap())
-        dashboardStats.addView(metric("نسبة الاسترجاع", "${String.format(Locale.US, "%.1f", rate)}%"), matchWrap())
+        val rateByUnit = unitGroups.entries.joinToString(" | ") { (unit, rows) ->
+            val q = rows.sumOf { it.quantity }; val r = rows.sumOf { it.recovered }
+            "$unit: ${if(q>0) String.format(Locale.US, "%.1f", r*100/q) else "0"}%"
+        }.ifBlank { "0%" }
+        dashboardStats.addView(metric("الكميات المسجلة حسب الوحدة", unitTotals { it.quantity }), matchWrap())
+        dashboardStats.addView(metric("الكميات المسترجعة حسب الوحدة", unitTotals { it.recovered }), matchWrap())
+        dashboardStats.addView(metric("نسبة الاسترجاع حسب الوحدة", rateByUnit), matchWrap())
+        dashboardStats.addView(metric("مؤشر النفايات إلى الإنتاج (كغ/100كغ)", "يُحسب عند إدخال إنتاج المصنع: ${fmt(kgTotal)} كغ نفايات قابلة للقياس بالكيلوغرام"), matchWrap())
         dashboardStats.addView(metric("صافي التكاليف", "${fmt(costs-income)} دج"), matchWrap())
         dashboardStats.addView(metric("عدد السجلات", records.size.toString()), matchWrap())
         val typesBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), dp(12), dp(12), dp(12)); setBackgroundColor(0xFFFFFFFF.toInt()) }
@@ -479,7 +485,7 @@ class MainActivity : Activity() {
                     setTextColor(0xFF247A5A.toInt())
                 }, matchWrap())
                 typeCard.addView(TextView(this).apply {
-                    text = "منتج: ${fmt(qty)} كغ  |  مسترجع: ${fmt(rec)} كغ\nالتكاليف: ${fmt(costType)} دج\nالمداخيل: ${fmt(incomeType)} دج  |  صافي التكلفة: ${fmt(netType)} دج\nتكلفة الكيلوغرام الواحد: ${fmt(perKg)} دج/كغ"
+                    text = "الكمية: ${fmt(qty)} ${contractItem(type)?.unit ?: "وحدة"}  |  مسترجع: ${fmt(rec)}\nالتكاليف: ${fmt(costType)} دج\nالمداخيل: ${fmt(incomeType)} دج  |  صافي التكلفة: ${fmt(netType)} دج\nتكلفة الوحدة: ${fmt(perKg)} دج / ${contractItem(type)?.unit ?: "وحدة"}"
                     textSize = 14f
                     setTextColor(0xFF243746.toInt())
                     setPadding(0, dp(5), 0, 0)
@@ -607,7 +613,7 @@ class MainActivity : Activity() {
     }
     private fun showContractTerms() {
         AlertDialog.Builder(this).setTitle("بيانات عقد هنكل")
-            .setMessage("الطرف: HENKEL ALGÉRIE SPA\\nالمتعامل: SNC Groupe EL BADISSIA\\nالفوترة: نهاية كل شهر\\nالدفع: خلال 10 أيام من استلام الفاتورة\\nالجمع: الأحد إلى الخميس، 08:00–16:00\\nالمدة: سنة قابلة للتجديد باتفاق الطرفين وملحق\\n\\nتنبيه: تاريخ السريان/التحرير يحتاج مراجعة النسخة الموقعة؛ لا أعرض تاريخاً غير مؤكد.")
+            .setMessage("الطرف: HENKEL ALGÉRIE SPA\\nالمشتري: SNC GROUPE EL BADISSIA\\nمرجع الوثيقة: NEW CONTRAT 2026\\nتاريخ السريان: 08-08-2026\\nتاريخ التحرير: 29-09-2026\\nالمدة: 12 شهراً، والتجديد بملحق موقع من الطرفين\\nالفوترة: نهاية كل شهر\\nالدفع: خلال 10 أيام من استلام الفاتورة\\nالجمع: الأحد إلى الخميس، 08:00–16:00\\nتقرير مفصل كل ثلاثة أشهر\\nالأسعار شاملة الرسوم وثابتة طوال مدة العقد\\nلا يجوز بيع النفايات داخل موقع هنكل، ولا الاستعانة بمشترٍ آخر دون موافقة كتابية مسبقة\\n\\nالأسعار والأنواع هي بنود العقد المرفق، وتظل قابلة للتعديل فقط بملحق تعاقدي موقع.")
             .setPositiveButton("إغلاق",null).show()
     }
 
