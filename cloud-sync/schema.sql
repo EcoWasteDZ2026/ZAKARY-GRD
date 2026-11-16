@@ -58,3 +58,25 @@ create trigger audit_production_logs after insert or update or delete on public.
 alter table public.contract_items add column if not exists company_name text not null default 'SNC Groupe EL BADISSIA';
 alter table public.waste_records add column if not exists buyer_company text not null default '';
 alter table public.waste_records add column if not exists operation_type text not null default 'بيع مباشر';
+
+
+-- Contract conditions transcribed from the supplied 2026 Henkel contract.
+alter table public.contract_items add column if not exists contract_reference text not null default 'NEW CONTRAT 2026';
+alter table public.contract_items add column if not exists signed_date date default '2026-09-29';
+alter table public.contract_items add column if not exists effective_date date default '2026-08-08';
+alter table public.contract_items add column if not exists duration_months integer not null default 12 check(duration_months>0);
+alter table public.contract_items add column if not exists invoice_frequency text not null default 'نهاية كل شهر';
+alter table public.contract_items add column if not exists payment_due_days integer not null default 10 check(payment_due_days>=0);
+alter table public.contract_items add column if not exists collection_days text not null default 'الأحد إلى الخميس';
+alter table public.contract_items add column if not exists collection_start_time time not null default '08:00';
+alter table public.contract_items add column if not exists collection_end_time time not null default '16:00';
+alter table public.contract_items add column if not exists quarterly_reporting boolean not null default true;
+alter table public.contract_items add column if not exists onsite_resale_prohibited boolean not null default true;
+alter table public.contract_items add column if not exists buyer_subcontracting_requires_approval boolean not null default true;
+alter table public.contract_items add column if not exists prices_include_tax boolean not null default true;
+alter table public.contract_items add column if not exists fixed_price_during_term boolean not null default true;
+alter table public.waste_records add column if not exists invoice_number text not null default '';
+alter table public.waste_records add column if not exists invoice_date date;
+alter table public.waste_records add column if not exists payment_status text not null default 'غير محدد';
+alter table public.waste_records add column if not exists payment_date date;
+alter table public.waste_records add column if not exists dispatch_reference text not null default '';
