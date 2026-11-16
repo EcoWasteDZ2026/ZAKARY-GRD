@@ -136,6 +136,24 @@ class SupabaseClient(context: Context) {
         return Pair(merged.values.toList(), mergedContracts)
     }
 
+    @Synchronized fun saveProduction(month: String, quantityKg: Double) {
+        refreshSession()
+        val uid = prefs.getString("user_id", "") ?: throw IllegalStateException("جلسة المستخدم غير صالحة.")
+        val payload = JSONArray().put(JSONObject().put("user_id",uid).put("production_month","$month-01").put("quantity_kg",quantityKg))
+        call(endpoint()+"/rest/v1/production_logs?on_conflict=user_id%2Cproduction_month","POST",payload.toString(),true,"resolution=merge-duplicates,return=minimal")
+    }
+
+    @Synchronized fun fetchProduction(): Map<String, Double> {
+        refreshSession()
+        val rows=JSONArray(call(endpoint()+"/rest/v1/production_logs?select=production_month,quantity_kg","GET",null))
+        val result=mutableMapOf<String,Double>()
+        for(i in 0 until rows.length()) {
+            val o=rows.getJSONObject(i)
+            result[o.optString("production_month").take(7)]=o.optDouble("quantity_kg")
+        }
+        return result
+    }
+
     fun markRecordDirty(id: String) {
         val s = prefs.getStringSet("dirty_records", emptySet())!!.toMutableSet(); s.add(id)
         prefs.edit().putStringSet("dirty_records", s).apply()
