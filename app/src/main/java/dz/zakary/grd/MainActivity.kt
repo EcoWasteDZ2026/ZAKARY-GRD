@@ -22,6 +22,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+data class ContractItem(val name: String, var price: Double, var unit: String, var method: String)
+
 data class WasteRecord(
     val id: Long, val date: String, val type: String, val department: String,
     val quantity: Double, val recovered: Double, val destination: String,
@@ -30,7 +32,16 @@ data class WasteRecord(
 
 class MainActivity : Activity() {
     private val records = mutableListOf<WasteRecord>()
-    private val types = listOf("بلاستيك", "ورق وكرتون", "معدن", "نفايات عضوية", "نفايات كيميائية", "زيوت مستعملة", "حمأة", "أخرى")
+    private val contractItems = mutableListOf(
+        ContractItem("صناديق كرتونية ونفايات الورق", 2.40, "كغ", "بيع"),
+        ContractItem("أغلفة وأفلام بلاستيكية", 5.40, "كغ", "بيع"),
+        ContractItem("أكياس Big Bags", 4.80, "كغ", "بيع"),
+        ContractItem("براميل معدنية", 216.0, "وحدة", "بيع"),
+        ContractItem("منصات خشبية وبقايا الخشب", 2.50, "كغ", "بيع"),
+        ContractItem("أكياس وأغلفة PE ملوثة بالمنظفات وغير قابلة للاسترجاع", 0.0, "حسب الكمية", "إزالة مجانية")
+    )
+    private val types get() = contractItems.map { it.name } + listOf("نفايات صناعية أخرى (تُضاف لاحقاً)")
+    private fun contractItem(name: String) = contractItems.find { it.name == name }
     private val departments = listOf("الإنتاج", "المخازن", "الصيانة", "المخبر", "معالجة المياه", "الإدارة", "أخرى")
     private val destinations = listOf("إعادة التدوير", "التثمين", "المعالجة", "التخلص النهائي", "مخزن مؤقت", "أخرى")
     private val pages = mutableMapOf<String, LinearLayout>()
@@ -40,7 +51,7 @@ class MainActivity : Activity() {
     private lateinit var recordsPage: LinearLayout
     private lateinit var formPage: LinearLayout
     private lateinit var financePage: LinearLayout
-    private lateinit var reportsPage: LinearLayout
+    private lateinit var reportsPage: LinearLayout\n    private lateinit var contractsPage: LinearLayout
     private lateinit var dashboardStats: LinearLayout
     private lateinit var recordList: LinearLayout
     private lateinit var dateInput: EditText
@@ -75,7 +86,7 @@ class MainActivity : Activity() {
         setContentView(scroll)
 
         val top = TextView(this).apply {
-            text = "ZAKARY GRD  ♻"
+            text = "HENKEL ALGÉRIE  ♻\nZAKARY GRD"
             textSize = 23f
             setTypeface(null, Typeface.BOLD)
             setTextColor(0xFFFFFFFF.toInt())
@@ -91,14 +102,14 @@ class MainActivity : Activity() {
             setBackgroundColor(0xFF173650.toInt())
         }
         hero.addView(TextView(this).apply {
-            text = "نظام تسيير واسترجاع النفايات الصناعية"
+            text = "نظام تسيير واسترجاع النفايات الصناعية — مصنع هنكل، ولاية ميلة"
             textSize = 20f
             setTypeface(null, Typeface.BOLD)
             setTextColor(0xFFFFFFFF.toInt())
             gravity = Gravity.RIGHT
         }, matchWrap())
         hero.addView(TextView(this).apply {
-            text = "تسجيل • متابعة • تثمين • تقارير"
+            text = "HENKEL MILA • العقود • التتبع • التثمين • التقارير"
             textSize = 14f
             setTextColor(0xFFD8F4EA.toInt())
             gravity = Gravity.RIGHT
@@ -114,7 +125,7 @@ class MainActivity : Activity() {
             Triple("تسجيل نفايات", "form", "＋"),
             Triple("السجلات", "records", "☷"),
             Triple("التكاليف والمداخيل", "finance", "دج"),
-            Triple("التقارير والنسخ", "reports", "⇩")
+            Triple("التقارير والنسخ", "reports", "⇩"),\n            Triple("العقود والأسعار", "contracts", "§")
         ).forEach { item ->
             val b = Button(this).apply {
                 text = "${item.third}  ${item.first}"
@@ -172,7 +183,7 @@ class MainActivity : Activity() {
         reportsPage.addView(actionButton("استيراد نسخة احتياطية") { importBackup() }, matchWrap())
         reportsPage.addView(actionButton("عرض ملخص حسب نوع النفايات") { showTypeSummary() }, matchWrap())
         reportsPage.addView(TextView(this).apply {
-            text = "ملاحظة: البيانات محفوظة محليًا على هذا الهاتف. احتفظ بنسخة احتياطية قبل حذف التطبيق أو تغيير الهاتف."
+            text = "ملاحظة: بيانات هنكل والعقود محفوظة محليًا على هذا الهاتف. احتفظ بنسخة احتياطية قبل حذف التطبيق أو تغيير الهاتف."
             textSize = 14f
             setTextColor(0xFF795500.toInt())
             setPadding(dp(12), dp(12), dp(12), dp(12))
@@ -209,7 +220,7 @@ class MainActivity : Activity() {
         if (name == "dashboard") refreshDashboard()
         if (name == "records") renderRecords()
         if (name == "finance") refreshFinance()
-        if (name == "reports") Unit
+        if (name == "reports") Unit\n        if (name == "contracts") refreshContracts()
     }
 
     private fun field(parent: LinearLayout, hintText: String, numeric: Boolean = false): EditText {
@@ -256,13 +267,13 @@ class MainActivity : Activity() {
         val quantity = number(quantityInput)
         val recovered = number(recoveredInput)
         val cost = number(costInput, 0.0)
-        val income = number(incomeInput, 0.0)
+        val selectedType = typeSpinner.selectedItem.toString()\n        val defaultIncome = contractItem(selectedType)?.let { quantity?.times(it.price) } ?: 0.0\n        val income = number(incomeInput, defaultIncome)
         if (date.isBlank() || quantity == null || recovered == null || cost == null || income == null ||
             quantity <= 0 || recovered < 0 || recovered > quantity || cost < 0 || income < 0) {
             Toast.makeText(this, "تحقق من التاريخ والكميات والتكاليف. المسترجع يجب ألا يتجاوز الإجمالي.", Toast.LENGTH_LONG).show()
             return
         }
-        records.add(0, WasteRecord(System.currentTimeMillis(), date, typeSpinner.selectedItem.toString(),
+        records.add(0, WasteRecord(System.currentTimeMillis(), date, selectedType,
             departmentSpinner.selectedItem.toString(), quantity, recovered, destinationSpinner.selectedItem.toString(),
             cost, income, noteInput.text.toString().trim()))
         persistRecords()
@@ -473,6 +484,65 @@ class MainActivity : Activity() {
             text = "تُحسب تكلفة كل نوع وحده من العمليات المسجلة لذلك النوع، ولا تُوزَّع تكلفة نوع على الأنواع الأخرى. تكلفة الكيلوغرام = تكاليف النوع ÷ كميته المنتجة. أدخل تكاليف النقل والمعالجة لكل سجل بدقة، فهذه الحسابات تعتمد على البيانات التي تدخلها."
             textSize = 14f; setTextColor(0xFF795500.toInt()); setPadding(dp(12), dp(12), dp(12), dp(12)); setBackgroundColor(0xFFFFF2CC.toInt())
         }, matchWrap())
+    }
+
+
+    private fun persistContracts() {
+        val a = JSONArray()
+        contractItems.forEach { c -> a.put(JSONObject().apply { put("name",c.name); put("price",c.price); put("unit",c.unit); put("method",c.method) }) }
+        getSharedPreferences("henkel_contracts", MODE_PRIVATE).edit().putString("items", a.toString()).apply()
+    }
+    private fun loadContracts() {
+        try {
+            val raw = getSharedPreferences("henkel_contracts", MODE_PRIVATE).getString("items", null) ?: return
+            val a = JSONArray(raw); if (a.length() == 0) return
+            contractItems.clear()
+            for (i in 0 until a.length()) { val o=a.getJSONObject(i); contractItems.add(ContractItem(o.optString("name"),o.optDouble("price"),o.optString("unit","كغ"),o.optString("method","بيع"))) }
+        } catch (_: Exception) { }
+    }
+    private fun refreshContracts() {
+        if (!::contractsPage.isInitialized) return
+        while (contractsPage.childCount > 4) contractsPage.removeViewAt(4)
+        contractItems.forEach { c ->
+            val box = LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(12),dp(10),dp(12),dp(10)); setBackgroundColor(0xFFFFFFFF.toInt()) }
+            box.addView(TextView(this).apply { text=c.name; textSize=16f; setTypeface(null,Typeface.BOLD); setTextColor(0xFF247A5A.toInt()) }, matchWrap())
+            box.addView(TextView(this).apply { text=if(c.method=="إزالة مجانية") "طريقة التعامل: إزالة مجانية — دون مقابل" else "السعر: ${fmt(c.price)} دج / ${c.unit}  •  طريقة التعامل: ${c.method}"; textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(5),0,0) }, matchWrap())
+            val p=LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); p.bottomMargin=dp(8); contractsPage.addView(box,p)
+        }
+        contractsPage.addView(TextView(this).apply { text="ملاحظات العقد: الفوترة في نهاية الشهر، والدفع خلال 10 أيام من استلام الفاتورة. أوقات الجمع المذكورة: الأحد إلى الخميس، 08:00–16:00. مدة العقد سنة قابلة للتجديد باتفاق الطرفين وملحق. لا تعتمد هذه الملخصات بدل العقد الأصلي الموقع."; textSize=13f; setTextColor(0xFF795500.toInt()); setPadding(dp(12),dp(12),dp(12),dp(12)); setBackgroundColor(0xFFFFF2CC.toInt()) }, matchWrap())
+    }
+    private fun editContractPrices() {
+        if (contractItems.isEmpty()) return
+        val labels=contractItems.map { it.name }.toTypedArray()
+        AlertDialog.Builder(this).setTitle("اختر بنداً لتعديل سعره").setItems(labels) { _, which ->
+            val c=contractItems[which]
+            val input=EditText(this).apply { hint="السعر بالدينار لكل ${c.unit}"; setText(c.price.toString()); inputType=android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
+            AlertDialog.Builder(this).setTitle("تعديل السعر").setMessage(c.name).setView(input)
+                .setNegativeButton("إلغاء",null).setPositiveButton("حفظ") { _, _ ->
+                    val v=input.text.toString().replace(',','.').toDoubleOrNull()
+                    if(v==null || v<0) Toast.makeText(this,"سعر غير صحيح",Toast.LENGTH_SHORT).show()
+                    else { c.price=v; persistContracts(); refreshContracts(); Toast.makeText(this,"تم تحديث السعر",Toast.LENGTH_SHORT).show() }
+                }.show()
+        }.show()
+    }
+    private fun addContractItem() {
+        val panel=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(8),0,dp(8),0) }
+        val name=EditText(this).apply { hint="اسم نوع النفاية / البند" }
+        val price=EditText(this).apply { hint="السعر بالدينار (0 للإزالة المجانية)"; inputType=android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
+        val unit=EditText(this).apply { hint="الوحدة: كغ أو وحدة"; setText("كغ") }
+        val method=EditText(this).apply { hint="طريقة التعامل: بيع / إزالة مجانية"; setText("بيع") }
+        listOf(name,price,unit,method).forEach { panel.addView(it) }
+        AlertDialog.Builder(this).setTitle("إضافة بند تعاقدي جديد").setView(panel).setNegativeButton("إلغاء",null)
+            .setPositiveButton("إضافة") { _, _ ->
+                val n=name.text.toString().trim(); val p=price.text.toString().replace(',','.').toDoubleOrNull(); val u=unit.text.toString().trim().ifBlank{"كغ"}; val m=method.text.toString().trim().ifBlank{"بيع"}
+                if(n.isBlank() || p==null || p<0) Toast.makeText(this,"أدخل اسم البند وسعراً صحيحاً",Toast.LENGTH_LONG).show()
+                else { if(contractItems.any{it.name==n}) Toast.makeText(this,"هذا البند موجود مسبقاً",Toast.LENGTH_SHORT).show() else { contractItems.add(ContractItem(n,p,u,m)); persistContracts(); refreshContracts(); Toast.makeText(this,"تمت إضافة البند",Toast.LENGTH_SHORT).show() } }
+            }.show()
+    }
+    private fun showContractTerms() {
+        AlertDialog.Builder(this).setTitle("بيانات عقد هنكل")
+            .setMessage("الطرف: HENKEL ALGÉRIE SPA\\nالمتعامل: SNC Groupe EL BADISSIA\\nالفوترة: نهاية كل شهر\\nالدفع: خلال 10 أيام من استلام الفاتورة\\nالجمع: الأحد إلى الخميس، 08:00–16:00\\nالمدة: سنة قابلة للتجديد باتفاق الطرفين وملحق\\n\\nتنبيه: تاريخ السريان/التحرير يحتاج مراجعة النسخة الموقعة؛ لا أعرض تاريخاً غير مؤكد.")
+            .setPositiveButton("إغلاق",null).show()
     }
 
     private fun showTypeSummary() {
