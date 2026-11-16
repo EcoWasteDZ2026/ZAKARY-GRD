@@ -41,3 +41,14 @@ drop trigger if exists audit_contract_items on public.contract_items;
 create trigger audit_contract_items after insert or update or delete on public.contract_items for each row execute function public.log_henkel_change();
 create index if not exists waste_user_date_idx on public.waste_records(user_id,event_date desc);
 create index if not exists audit_user_time_idx on public.audit_logs(user_id,changed_at desc);
+
+create table if not exists public.production_logs (
+ id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade,
+ production_month date not null, quantity_kg numeric(16,3) not null check(quantity_kg>=0),
+ updated_at timestamptz not null default now(), unique(user_id,production_month)
+);
+alter table public.production_logs enable row level security;
+drop policy if exists production_owner_all on public.production_logs;
+create policy production_owner_all on public.production_logs for all to authenticated using(auth.uid()=user_id) with check(auth.uid()=user_id);
+drop trigger if exists audit_production_logs on public.production_logs;
+create trigger audit_production_logs after insert or update or delete on public.production_logs for each row execute function public.log_henkel_change();
