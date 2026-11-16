@@ -51,7 +51,8 @@ class MainActivity : Activity() {
     private lateinit var recordsPage: LinearLayout
     private lateinit var formPage: LinearLayout
     private lateinit var financePage: LinearLayout
-    private lateinit var reportsPage: LinearLayout\n    private lateinit var contractsPage: LinearLayout
+    private lateinit var reportsPage: LinearLayout
+    private lateinit var contractsPage: LinearLayout
     private lateinit var dashboardStats: LinearLayout
     private lateinit var recordList: LinearLayout
     private lateinit var dateInput: EditText
@@ -125,7 +126,8 @@ class MainActivity : Activity() {
             Triple("تسجيل نفايات", "form", "＋"),
             Triple("السجلات", "records", "☷"),
             Triple("التكاليف والمداخيل", "finance", "دج"),
-            Triple("التقارير والنسخ", "reports", "⇩"),\n            Triple("العقود والأسعار", "contracts", "§")
+            Triple("التقارير والنسخ", "reports", "⇩"),
+            Triple("العقود والأسعار", "contracts", "§")
         ).forEach { item ->
             val b = Button(this).apply {
                 text = "${item.third}  ${item.first}"
@@ -220,7 +222,8 @@ class MainActivity : Activity() {
         if (name == "dashboard") refreshDashboard()
         if (name == "records") renderRecords()
         if (name == "finance") refreshFinance()
-        if (name == "reports") Unit\n        if (name == "contracts") refreshContracts()
+        if (name == "reports") Unit
+        if (name == "contracts") refreshContracts()
     }
 
     private fun field(parent: LinearLayout, hintText: String, numeric: Boolean = false): EditText {
@@ -267,7 +270,9 @@ class MainActivity : Activity() {
         val quantity = number(quantityInput)
         val recovered = number(recoveredInput)
         val cost = number(costInput, 0.0)
-        val selectedType = typeSpinner.selectedItem.toString()\n        val defaultIncome = contractItem(selectedType)?.let { quantity?.times(it.price) } ?: 0.0\n        val income = number(incomeInput, defaultIncome)
+        val selectedType = typeSpinner.selectedItem.toString()
+        val defaultIncome = contractItem(selectedType)?.let { quantity?.times(it.price) } ?: 0.0
+        val income = number(incomeInput, defaultIncome)
         if (date.isBlank() || quantity == null || recovered == null || cost == null || income == null ||
             quantity <= 0 || recovered < 0 || recovered > quantity || cost < 0 || income < 0) {
             Toast.makeText(this, "تحقق من التاريخ والكميات والتكاليف. المسترجع يجب ألا يتجاوز الإجمالي.", Toast.LENGTH_LONG).show()
