@@ -35,6 +35,8 @@ data class WasteRecord(
 class MainActivity : Activity() {
     private val cloud by lazy { SupabaseClient(this) }
     private val records = mutableListOf<WasteRecord>()
+    private val productionByMonth = mutableMapOf<String, Double>()
+    private lateinit var productionInput: EditText
     private val contractItems = mutableListOf(
         ContractItem("صناديق كرتونية ونفايات الورق", 2.40, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
         ContractItem("الأغلفة البلاستيكية (المطاطية وأغلفة التغليف)", 5.40, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
@@ -81,6 +83,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         loadRecords()
         loadContracts()
+        restoreProduction()
         buildScreen()
         renderRecords()
         showPage("dashboard")
@@ -157,6 +160,8 @@ class MainActivity : Activity() {
         root.addView(contentHost, matchWrap())
 
         dashboardPage = newPage("لوحة القيادة")
+        productionInput = field(dashboardPage, "إنتاج المصنع للشهر الحالي بالكيلوغرام", true).apply { setText(loadProduction(today().take(7)).takeIf { it > 0 }?.let { fmt(it) } ?: "") }
+        dashboardPage.addView(actionButton("حفظ كمية إنتاج الشهر") { saveProductionMonth() }, matchWrap())
         dashboardStats = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         dashboardPage.addView(dashboardStats, matchWrap())
         val quick = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -379,7 +384,7 @@ class MainActivity : Activity() {
         recordList.removeAllViews()
         val q = if (::searchInput.isInitialized) searchInput.text.toString().trim().lowercase(Locale.ROOT) else ""
         val filtered = records.filter {
-            q.isBlank() || listOf(it.date, it.type, it.department, it.destination, it.note).any { value -> value.lowercase(Locale.ROOT).contains(q) }
+            q.isBlank() || listOf(it.date, it.type, it.department, it.destination, it.note, it.buyerCompany, it.invoiceNumber, it.dispatchReference).any { value -> value.lowercase(Locale.ROOT).contains(q) }
         }
         if (filtered.isEmpty()) {
             recordList.addView(TextView(this).apply {
@@ -466,6 +471,7 @@ class MainActivity : Activity() {
 
     private fun refreshDashboard() {
         if (!::dashboardStats.isInitialized) return
+        if (::productionInput.isInitialized && productionInput.text.isNullOrBlank()) { val v=loadProduction(today().take(7)); if(v>0) productionInput.setText(fmt(v)) }
         dashboardStats.removeAllViews()
         val unitGroups = records.groupBy { contractItem(it.type)?.unit ?: "وحدة" }
         fun unitTotals(selector: (WasteRecord) -> Double) = unitGroups.entries.joinToString(" + ") { (unit, rows) -> "${fmt(rows.sumOf(selector))} $unit" }.ifBlank { "0" }
@@ -481,7 +487,7 @@ class MainActivity : Activity() {
         dashboardStats.addView(metric("الكميات المسجلة حسب الوحدة", unitTotals { it.quantity }), matchWrap())
         dashboardStats.addView(metric("الكميات المسترجعة حسب الوحدة", unitTotals { it.recovered }), matchWrap())
         dashboardStats.addView(metric("نسبة الاسترجاع حسب الوحدة", rateByUnit), matchWrap())
-        dashboardStats.addView(metric("مؤشر النفايات إلى الإنتاج (كغ/100كغ)", "يُحسب عند إدخال إنتاج المصنع: ${fmt(kgTotal)} كغ نفايات قابلة للقياس بالكيلوغرام"), matchWrap())
+        dashboardStats.addView(metric("مؤشر النفايات إلى الإنتاج (كغ/100كغ)", if(loadProduction(today().take(7))>0) "${fmt(kgTotal/loadProduction(today().take(7))*100)} كغ/100كغ | المرجع الداخلي 0.96" else "أدخل إنتاج الشهر لحساب المؤشر؛ المرجع الداخلي 0.96"), matchWrap())
         dashboardStats.addView(metric("صافي التكاليف", "${fmt(costs-income)} دج"), matchWrap())
         dashboardStats.addView(metric("عدد السجلات", records.size.toString()), matchWrap())
         val typesBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), dp(12), dp(12), dp(12)); setBackgroundColor(0xFFFFFFFF.toInt()) }
@@ -519,6 +525,24 @@ class MainActivity : Activity() {
             }
         }
         dashboardStats.addView(typesBox, matchWrap())
+    }
+
+    private fun saveProductionMonth() {
+        val month=today().take(7)
+        val value=number(productionInput)
+        if(value==null || value<0) { Toast.makeText(this,"أدخل كمية إنتاج صحيحة بالكيلوغرام.",Toast.LENGTH_LONG).show(); return }
+        productionByMonth[month]=value
+        persistProduction()
+        if(cloud.connected()) Thread { try { cloud.saveProduction(month,value); runOnUiThread { Toast.makeText(this,"تم حفظ إنتاج الشهر ومزامنته.",Toast.LENGTH_SHORT).show(); refreshDashboard() } } catch(e:Exception) { runOnUiThread { Toast.makeText(this,"حُفظ محلياً، تعذرت المزامنة: "+(e.message ?: ""),Toast.LENGTH_LONG).show() } } }.start()
+        refreshDashboard()
+    }
+    private fun loadProduction(month:String):Double = productionByMonth[month] ?: 0.0
+    private fun persistProduction() {
+        val o=JSONObject(); productionByMonth.forEach { (m,v)->o.put(m,v) }
+        getSharedPreferences("henkel_production", MODE_PRIVATE).edit().putString("monthly",o.toString()).apply()
+    }
+    private fun restoreProduction() {
+        try { val o=JSONObject(getSharedPreferences("henkel_production", MODE_PRIVATE).getString("monthly","{}") ?: "{}"); val it=o.keys(); while(it.hasNext()){val k=it.next();productionByMonth[k]=o.optDouble(k)} } catch(_:Exception) {}
     }
 
     private fun metric(label: String, value: String): View {
