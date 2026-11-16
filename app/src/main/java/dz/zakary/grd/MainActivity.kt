@@ -28,7 +28,8 @@ data class ContractItem(val name: String, var price: Double, var unit: String, v
 data class WasteRecord(
     val id: String, val date: String, val type: String, val department: String,
     val quantity: Double, val recovered: Double, val destination: String,
-    val cost: Double, val income: Double, val note: String, val buyerCompany: String = "", val operationType: String = "بيع مباشر"
+    val cost: Double, val income: Double, val note: String, val buyerCompany: String = "", val operationType: String = "بيع مباشر",
+    val dispatchReference: String = "", val invoiceNumber: String = "", val invoiceDate: String = "", val paymentStatus: String = "غير محدد", val paymentDate: String = ""
 )
 
 class MainActivity : Activity() {
@@ -64,6 +65,11 @@ class MainActivity : Activity() {
     private lateinit var incomeInput: EditText
     private lateinit var buyerInput: EditText
     private lateinit var operationSpinner: Spinner
+    private lateinit var dispatchInput: EditText
+    private lateinit var invoiceNumberInput: EditText
+    private lateinit var invoiceDateInput: EditText
+    private lateinit var paymentDateInput: EditText
+    private lateinit var paymentStatusSpinner: Spinner
     private lateinit var noteInput: EditText
     private lateinit var typeSpinner: Spinner
     private lateinit var departmentSpinner: Spinner
@@ -189,7 +195,12 @@ class MainActivity : Activity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { updateIncomePreview() }
             override fun afterTextChanged(s: android.text.Editable?) {}
         })
-        noteInput = field(formPage, "ملاحظات أو رقم وصل (اختياري)")
+        noteInput = field(formPage, "ملاحظات (اختياري)")
+        dispatchInput = field(formPage, "مرجع وصل الخروج / أمر الخروج")
+        invoiceNumberInput = field(formPage, "رقم الفاتورة")
+        invoiceDateInput = field(formPage, "تاريخ الفاتورة YYYY-MM-DD")
+        paymentStatusSpinner = spinner(formPage, listOf("غير محدد", "غير مفوتر", "فاتورة صادرة - غير مدفوع", "مدفوع", "متأخر"))
+        paymentDateInput = field(formPage, "تاريخ الدفع YYYY-MM-DD")
         formPage.addView(actionButton("حفظ العملية") { saveRecord() }, matchWrap())
         formPage.addView(actionButton("مسح حقول الإدخال") { clearForm() }, matchWrap())
         pages["form"] = formPage
@@ -322,7 +333,8 @@ class MainActivity : Activity() {
         val newId = UUID.randomUUID().toString()
         records.add(0, WasteRecord(newId, date, selectedType,
             departmentSpinner.selectedItem.toString(), quantity, recovered, destinationSpinner.selectedItem.toString(),
-            cost, income, noteInput.text.toString().trim(), if (operation == "بيع مباشر") buyer else "", operation))
+            cost, income, noteInput.text.toString().trim(), if (operation == "بيع مباشر") buyer else "", operation,
+            dispatchInput.text.toString().trim(), invoiceNumberInput.text.toString().trim(), invoiceDateInput.text.toString().trim(), paymentStatusSpinner.selectedItem.toString(), paymentDateInput.text.toString().trim()))
         persistRecords()
         cloud.markRecordDirty(newId)
         if (cloud.connected()) syncCloud(false)
@@ -352,6 +364,11 @@ class MainActivity : Activity() {
         buyerInput.setText("")
         operationSpinner.setSelection(0)
         noteInput.setText("")
+        dispatchInput.setText("")
+        invoiceNumberInput.setText("")
+        invoiceDateInput.setText("")
+        paymentDateInput.setText("")
+        paymentStatusSpinner.setSelection(0)
         typeSpinner.setSelection(0)
         departmentSpinner.setSelection(0)
         destinationSpinner.setSelection(0)
@@ -386,7 +403,7 @@ class MainActivity : Activity() {
                 setTextColor(0xFF247A5A.toInt())
             }, matchWrap())
             card.addView(TextView(this).apply {
-                text = "القسم: ${r.department}\nالإجمالي: ${fmt(r.quantity)} ${contractItem(r.type)?.unit ?: "وحدة"} | المسترجع: ${fmt(r.recovered)}\nالعملية: ${r.operationType} | الشركة: ${r.buyerCompany.ifBlank { "—" }}\nالوجهة/وصل الخروج: ${r.destination}\nالتكلفة: ${fmt(r.cost)} دج | المداخيل: ${fmt(r.income)} دج" +
+                text = "القسم: ${r.department}\nالإجمالي: ${fmt(r.quantity)} ${contractItem(r.type)?.unit ?: "وحدة"} | المسترجع: ${fmt(r.recovered)}\nالعملية: ${r.operationType} | الشركة: ${r.buyerCompany.ifBlank { "—" }}\nالوجهة: ${r.destination}\nالتكلفة: ${fmt(r.cost)} دج | المداخيل: ${fmt(r.income)} دج\nوصل الخروج: ${r.dispatchReference.ifBlank { "—" }} | الفاتورة: ${r.invoiceNumber.ifBlank { "—" }}\nحالة الدفع: ${r.paymentStatus} | تاريخ الفاتورة: ${r.invoiceDate.ifBlank { "—" }} | تاريخ الدفع: ${r.paymentDate.ifBlank { "—" }}" +
                     if (r.note.isBlank()) "" else "\nملاحظات: ${r.note}"
                 textSize = 14f
                 setTextColor(0xFF243746.toInt())
@@ -665,14 +682,14 @@ class MainActivity : Activity() {
         records.forEach { r -> a.put(JSONObject().apply {
             put("id",r.id); put("date",r.date); put("type",r.type); put("department",r.department)
             put("quantity",r.quantity); put("recovered",r.recovered); put("destination",r.destination)
-            put("cost",r.cost); put("income",r.income); put("note",r.note); put("buyerCompany",r.buyerCompany); put("operationType",r.operationType)
+            put("cost",r.cost); put("income",r.income); put("note",r.note); put("buyerCompany",r.buyerCompany); put("operationType",r.operationType); put("dispatchReference",r.dispatchReference); put("invoiceNumber",r.invoiceNumber); put("invoiceDate",r.invoiceDate); put("paymentStatus",r.paymentStatus); put("paymentDate",r.paymentDate)
         }) }
         return a
     }
 
     private fun readRecord(o: JSONObject, id: String) = WasteRecord(id, o.optString("date"), o.optString("type"),
         o.optString("department"), o.optDouble("quantity"), o.optDouble("recovered"), o.optString("destination"),
-        o.optDouble("cost"), o.optDouble("income"), o.optString("note"), o.optString("buyerCompany"), o.optString("operationType", "بيع مباشر"))
+        o.optDouble("cost"), o.optDouble("income"), o.optString("note"), o.optString("buyerCompany"), o.optString("operationType", "بيع مباشر"), o.optString("dispatchReference"), o.optString("invoiceNumber"), o.optString("invoiceDate"), o.optString("paymentStatus", "غير محدد"), o.optString("paymentDate"))
 
     private fun persistRecords() {
         getSharedPreferences("zakary_grd", MODE_PRIVATE).edit().putString("records", toJson().toString()).apply()
