@@ -92,7 +92,10 @@ class SupabaseClient(context: Context) {
                 .put("waste_type", r.type).put("department", r.department).put("quantity", r.quantity)
                 .put("recovered", r.recovered).put("destination", r.destination).put("cost_dzd", r.cost)
                 .put("income_dzd", r.income).put("note", r.note)
-                .put("buyer_company", r.buyerCompany).put("operation_type", r.operationType))
+                .put("buyer_company", r.buyerCompany).put("operation_type", r.operationType)
+                .put("dispatch_reference", r.dispatchReference).put("invoice_number", r.invoiceNumber)
+                .put("invoice_date", r.invoiceDate.ifBlank { JSONObject.NULL }).put("payment_status", r.paymentStatus)
+                .put("payment_date", r.paymentDate.ifBlank { JSONObject.NULL }))
         }
         if (recordPayload.length() > 0) call(base + "waste_records?on_conflict=id", "POST", recordPayload.toString(), true, "resolution=merge-duplicates,return=minimal")
 
@@ -116,7 +119,7 @@ class SupabaseClient(context: Context) {
             val id = o.optString("id")
             merged[id] = WasteRecord(id, o.optString("event_date"), o.optString("waste_type"), o.optString("department"),
                 o.optDouble("quantity"), o.optDouble("recovered"), o.optString("destination"), o.optDouble("cost_dzd"),
-                o.optDouble("income_dzd"), o.optString("note"), o.optString("buyer_company"), o.optString("operation_type", "بيع مباشر"))
+                o.optDouble("income_dzd"), o.optString("note"), o.optString("buyer_company"), o.optString("operation_type", "بيع مباشر"), o.optString("dispatch_reference"), o.optString("invoice_number"), o.optString("invoice_date"), o.optString("payment_status", "غير محدد"), o.optString("payment_date"))
         }
         // Preserve records created locally while offline; dirty ones were uploaded above.
         localRecords.forEach { if (!merged.containsKey(it.id)) merged[it.id] = it }
