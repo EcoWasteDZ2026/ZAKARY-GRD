@@ -35,11 +35,11 @@ class MainActivity : Activity() {
     private val cloud by lazy { SupabaseClient(this) }
     private val records = mutableListOf<WasteRecord>()
     private val contractItems = mutableListOf(
-        ContractItem("صناديق كرتونية ونفايات الورق", 2.40, "كغ", "بيع"),
-        ContractItem("أغلفة وأفلام بلاستيكية", 5.40, "كغ", "بيع"),
-        ContractItem("أكياس Big Bags", 4.80, "كغ", "بيع"),
-        ContractItem("براميل معدنية", 216.0, "وحدة", "بيع"),
-        ContractItem("منصات خشبية وبقايا الخشب", 2.50, "كغ", "بيع"),
+        ContractItem("صناديق كرتونية ونفايات الورق", 2.40, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
+        ContractItem("أغلفة وأفلام بلاستيكية", 5.40, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
+        ContractItem("أكياس Big Bags", 4.80, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
+        ContractItem("براميل معدنية", 216.0, "وحدة", "بيع", "SNC Groupe EL BADISSIA"),
+        ContractItem("منصات خشبية وبقايا الخشب", 2.50, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
         ContractItem("أكياس وأغلفة PE ملوثة بالمنظفات وغير قابلة للاسترجاع", 0.0, "حسب الكمية", "إزالة مجانية")
     )
     private val types get() = contractItems.map { it.name } + listOf("نفايات صناعية أخرى (تُضاف لاحقاً)")
@@ -561,7 +561,7 @@ class MainActivity : Activity() {
             val raw = getSharedPreferences("henkel_contracts", MODE_PRIVATE).getString("items", null) ?: return
             val a = JSONArray(raw); if (a.length() == 0) return
             contractItems.clear()
-            for (i in 0 until a.length()) { val o=a.getJSONObject(i); contractItems.add(ContractItem(o.optString("name"),o.optDouble("price"),o.optString("unit","كغ"),o.optString("method","بيع"),o.optString("companyName"))) }
+            for (i in 0 until a.length()) { val o=a.getJSONObject(i); contractItems.add(ContractItem(o.optString("name"),o.optDouble("price"),o.optString("unit","كغ"),o.optString("method","بيع"),o.optString("companyName").ifBlank { if (o.optString("method","بيع")=="بيع") "SNC Groupe EL BADISSIA" else "" })) }
         } catch (_: Exception) { }
     }
     private fun refreshContracts() {
