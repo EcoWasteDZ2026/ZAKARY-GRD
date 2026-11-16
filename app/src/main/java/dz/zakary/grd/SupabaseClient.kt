@@ -105,7 +105,7 @@ class SupabaseClient(context: Context) {
         val contractPayload = JSONArray()
         localContracts.filter { dirtyContracts.contains(it.name) || dirtyContracts.contains("*") }.forEach { item ->
             contractPayload.put(JSONObject().put("user_id", uid).put("name", item.name).put("price", item.price)
-                .put("unit", item.unit).put("method", item.method).put("company_name", item.companyName))
+                .put("unit", item.unit).put("method", item.method).put("company_name", item.companyName.ifBlank { if (item.method == "بيع") "SNC Groupe EL BADISSIA" else "" }))
         }
         if (contractPayload.length() > 0) call(base + "contract_items?on_conflict=user_id%2Cname", "POST", contractPayload.toString(), true, "resolution=merge-duplicates,return=minimal")
 
