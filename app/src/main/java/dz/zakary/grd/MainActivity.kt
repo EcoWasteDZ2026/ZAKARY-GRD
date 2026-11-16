@@ -191,7 +191,7 @@ class MainActivity : Activity() {
         reportsPage.addView(actionButton("استيراد نسخة احتياطية") { importBackup() }, matchWrap())
         reportsPage.addView(actionButton("عرض ملخص حسب نوع النفايات") { showTypeSummary() }, matchWrap())
         reportsPage.addView(TextView(this).apply {
-            text = "ملاحظة: بيانات هنكل والعقود محفوظة محليًا على هذا الهاتف. احتفظ بنسخة احتياطية قبل حذف التطبيق أو تغيير الهاتف."
+            text = "ملاحظة: تحفظ البيانات محليًا وتُزامَن مع حساب هنكل المشترك عند الاتصال. احتفظ بنسخة احتياطية دورية، ولا تشارك بيانات الدخول أو مفاتيح الإدارة."
             textSize = 14f
             setTextColor(0xFF795500.toInt())
             setPadding(dp(12), dp(12), dp(12), dp(12))
