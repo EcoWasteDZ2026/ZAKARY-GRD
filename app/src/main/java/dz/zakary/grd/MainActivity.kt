@@ -21,16 +21,18 @@ import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 data class ContractItem(val name: String, var price: Double, var unit: String, var method: String)
 
 data class WasteRecord(
-    val id: Long, val date: String, val type: String, val department: String,
+    val id: String, val date: String, val type: String, val department: String,
     val quantity: Double, val recovered: Double, val destination: String,
     val cost: Double, val income: Double, val note: String
 )
 
 class MainActivity : Activity() {
+    private val cloud by lazy { SupabaseClient(this) }
     private val records = mutableListOf<WasteRecord>()
     private val contractItems = mutableListOf(
         ContractItem("صناديق كرتونية ونفايات الورق", 2.40, "كغ", "بيع"),
@@ -74,6 +76,7 @@ class MainActivity : Activity() {
         buildScreen()
         renderRecords()
         showPage("dashboard")
+        if (cloud.connected()) syncCloud(false)
     }
 
     private fun buildScreen() {
@@ -152,6 +155,8 @@ class MainActivity : Activity() {
         quick.addView(actionButton("＋ تسجيل نفايات جديدة") { showPage("form") }, matchWrap())
         quick.addView(actionButton("☷ عرض السجلات") { showPage("records") }, matchWrap())
         quick.addView(actionButton("⇩ تصدير تقرير CSV") { shareCsv() }, matchWrap())
+        quick.addView(actionButton("☁ ربط الحساب والمزامنة") { showCloudDialog() }, matchWrap())
+        quick.addView(actionButton("⟳ مزامنة البيانات مع الحاسوب") { syncCloud(true) }, matchWrap())
         dashboardPage.addView(quick, matchWrap())
         pages["dashboard"] = dashboardPage
 
@@ -193,6 +198,13 @@ class MainActivity : Activity() {
             setBackgroundColor(0xFFFFF2CC.toInt())
         }, matchWrap())
         pages["reports"] = reportsPage
+
+        contractsPage = newPage("العقود والأسعار")
+        contractsPage.addView(actionButton("تعديل أسعار البنود") { editContractPrices() }, matchWrap())
+        contractsPage.addView(actionButton("إضافة بند تعاقدي") { addContractItem() }, matchWrap())
+        contractsPage.addView(actionButton("عرض شروط العقد") { showContractTerms() }, matchWrap())
+        contractsPage.addView(actionButton("مزامنة العقود") { syncCloud(true) }, matchWrap())
+        pages["contracts"] = contractsPage
 
         refreshDashboard()
         refreshFinance()
@@ -279,10 +291,13 @@ class MainActivity : Activity() {
             Toast.makeText(this, "تحقق من التاريخ والكميات والتكاليف. المسترجع يجب ألا يتجاوز الإجمالي.", Toast.LENGTH_LONG).show()
             return
         }
-        records.add(0, WasteRecord(System.currentTimeMillis(), date, selectedType,
+        val newId = UUID.randomUUID().toString()
+        records.add(0, WasteRecord(newId, date, selectedType,
             departmentSpinner.selectedItem.toString(), quantity, recovered, destinationSpinner.selectedItem.toString(),
             cost, income, noteInput.text.toString().trim()))
         persistRecords()
+        cloud.markRecordDirty(newId)
+        if (cloud.connected()) syncCloud(false)
         clearForm()
         renderRecords()
         refreshDashboard()
@@ -354,7 +369,9 @@ class MainActivity : Activity() {
             .setNegativeButton("إلغاء", null)
             .setPositiveButton("حذف") { _, _ ->
                 records.removeAll { it.id == r.id }
+                cloud.markRecordDeleted(r.id)
                 persistRecords(); renderRecords(); refreshDashboard(); refreshFinance()
+                if (cloud.connected()) syncCloud(false)
             }.show()
     }
 
@@ -377,7 +394,9 @@ class MainActivity : Activity() {
                 } else {
                     val index = records.indexOfFirst { it.id == r.id }
                     if (index >= 0) records[index] = r.copy(quantity=nq, recovered=nr, cost=nc, income=ni)
+                    cloud.markRecordDirty(r.id)
                     persistRecords(); renderRecords(); refreshDashboard(); refreshFinance()
+                    if (cloud.connected()) syncCloud(false)
                 }
             }.show()
     }
@@ -527,7 +546,7 @@ class MainActivity : Activity() {
                 .setNegativeButton("إلغاء",null).setPositiveButton("حفظ") { _, _ ->
                     val v=input.text.toString().replace(',','.').toDoubleOrNull()
                     if(v==null || v<0) Toast.makeText(this,"سعر غير صحيح",Toast.LENGTH_SHORT).show()
-                    else { c.price=v; persistContracts(); refreshContracts(); Toast.makeText(this,"تم تحديث السعر",Toast.LENGTH_SHORT).show() }
+                    else { c.price=v; persistContracts(); cloud.markContractsDirty(); refreshContracts(); if(cloud.connected()) syncCloud(false); Toast.makeText(this,"تم تحديث السعر",Toast.LENGTH_SHORT).show() }
                 }.show()
         }.show()
     }
@@ -542,7 +561,7 @@ class MainActivity : Activity() {
             .setPositiveButton("إضافة") { _, _ ->
                 val n=name.text.toString().trim(); val p=price.text.toString().replace(',','.').toDoubleOrNull(); val u=unit.text.toString().trim().ifBlank{"كغ"}; val m=method.text.toString().trim().ifBlank{"بيع"}
                 if(n.isBlank() || p==null || p<0) Toast.makeText(this,"أدخل اسم البند وسعراً صحيحاً",Toast.LENGTH_LONG).show()
-                else { if(contractItems.any{it.name==n}) Toast.makeText(this,"هذا البند موجود مسبقاً",Toast.LENGTH_SHORT).show() else { contractItems.add(ContractItem(n,p,u,m)); typeSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,types); persistContracts(); refreshContracts(); Toast.makeText(this,"تمت إضافة البند",Toast.LENGTH_SHORT).show() } }
+                else { if(contractItems.any{it.name==n}) Toast.makeText(this,"هذا البند موجود مسبقاً",Toast.LENGTH_SHORT).show() else { contractItems.add(ContractItem(n,p,u,m)); typeSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,types); persistContracts(); cloud.markContractsDirty(); refreshContracts(); if(cloud.connected()) syncCloud(false); Toast.makeText(this,"تمت إضافة البند",Toast.LENGTH_SHORT).show() } }
             }.show()
     }
     private fun showContractTerms() {
@@ -581,7 +600,7 @@ class MainActivity : Activity() {
                     var added = 0
                     for (i in 0 until a.length()) {
                         val o = a.getJSONObject(i)
-                        val id = o.optLong("id", System.currentTimeMillis()+i)
+                        val id = normalizeId(o.optString("id", ""))
                         if (records.none { it.id == id }) {
                             records.add(readRecord(o, id)); added++
                         }
@@ -604,7 +623,7 @@ class MainActivity : Activity() {
         return a
     }
 
-    private fun readRecord(o: JSONObject, id: Long) = WasteRecord(id, o.optString("date"), o.optString("type"),
+    private fun readRecord(o: JSONObject, id: String) = WasteRecord(id, o.optString("date"), o.optString("type"),
         o.optString("department"), o.optDouble("quantity"), o.optDouble("recovered"), o.optString("destination"),
         o.optDouble("cost"), o.optDouble("income"), o.optString("note"))
 
@@ -615,8 +634,81 @@ class MainActivity : Activity() {
     private fun loadRecords() {
         try {
             val a = JSONArray(getSharedPreferences("zakary_grd", MODE_PRIVATE).getString("records", "[]") ?: "[]")
-            for (i in 0 until a.length()) records.add(readRecord(a.getJSONObject(i), a.getJSONObject(i).optLong("id")))
+            for (i in 0 until a.length()) { val o=a.getJSONObject(i); records.add(readRecord(o, normalizeId(o.optString("id", "")))) }
+            persistRecords()
         } catch (_: Exception) { records.clear() }
+    }
+
+
+    private fun normalizeId(value: String): String {
+        return try { UUID.fromString(value).toString() } catch (_: Exception) { UUID.randomUUID().toString() }
+    }
+
+    private fun showCloudDialog() {
+        val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(10), dp(4), dp(10), dp(4)) }
+        val project = EditText(this).apply { hint = "رابط Supabase: https://xxxx.supabase.co"; setText(cloud.projectUrl()) }
+        val publicKey = EditText(this).apply { hint = "المفتاح العام Publishable / anon"; setText(cloud.publicKey()); textSize = 12f }
+        val email = EditText(this).apply { hint = "البريد الإلكتروني"; setText(cloud.email()); inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS }
+        val password = EditText(this).apply { hint = "كلمة مرور حساب Supabase"; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD }
+        listOf(project, publicKey, email, password).forEach { panel.addView(it, matchWrap()) }
+        AlertDialog.Builder(this).setTitle("ربط الهاتف بقاعدة هنكل المشتركة")
+            .setMessage("أدخل رابط المشروع والمفتاح العام فقط، ثم سجّل الدخول بالحساب نفسه المستعمل على الحاسوب. لا تدخل مفتاح service_role.")
+            .setView(panel).setNegativeButton("إلغاء", null)
+            .setPositiveButton("اتصال ومزامنة", null).create().also { dialog ->
+                dialog.setOnShowListener {
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                        val u = project.text.toString().trim()
+                        val k = publicKey.text.toString().trim()
+                        val e = email.text.toString().trim()
+                        val pw = password.text.toString()
+                        if (!u.startsWith("https://") || k.isBlank() || e.isBlank() || pw.isBlank()) {
+                            Toast.makeText(this, "أكمل الرابط والمفتاح العام والبريد وكلمة المرور.", Toast.LENGTH_LONG).show()
+                            return@setOnClickListener
+                        }
+                        dialog.dismiss()
+                        Toast.makeText(this, "جارٍ الاتصال الآمن...", Toast.LENGTH_SHORT).show()
+                        Thread {
+                            try {
+                                cloud.signIn(u, k, e, pw)
+                                val result = cloud.sync(records.toList(), contractItems.toList())
+                                runOnUiThread {
+                                    records.clear(); records.addAll(result.first)
+                                    contractItems.clear(); contractItems.addAll(result.second)
+                                    persistRecords(); persistContracts()
+                                    if (::typeSpinner.isInitialized) typeSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, types)
+                                    renderRecords(); refreshDashboard(); refreshFinance(); refreshContracts()
+                                    Toast.makeText(this, "تم ربط الهاتف ومزامنة البيانات بنجاح.", Toast.LENGTH_LONG).show()
+                                }
+                            } catch (ex: Exception) {
+                                runOnUiThread { Toast.makeText(this, "تعذر الاتصال: " + (ex.message ?: "خطأ غير معروف"), Toast.LENGTH_LONG).show() }
+                            }
+                        }.start()
+                    }
+                }
+                dialog.show()
+            }
+    }
+
+    private fun syncCloud(showMessage: Boolean) {
+        if (!cloud.connected()) {
+            if (showMessage) showCloudDialog()
+            return
+        }
+        Thread {
+            try {
+                val result = cloud.sync(records.toList(), contractItems.toList())
+                runOnUiThread {
+                    records.clear(); records.addAll(result.first)
+                    contractItems.clear(); contractItems.addAll(result.second)
+                    persistRecords(); persistContracts()
+                    if (::typeSpinner.isInitialized) typeSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, types)
+                    renderRecords(); refreshDashboard(); refreshFinance(); refreshContracts()
+                    if (showMessage) Toast.makeText(this, "تمت المزامنة بين الهاتف والحاسوب.", Toast.LENGTH_LONG).show()
+                }
+            } catch (ex: Exception) {
+                if (showMessage) runOnUiThread { Toast.makeText(this, "فشلت المزامنة: " + (ex.message ?: "تحقق من الإنترنت وإعداد Supabase"), Toast.LENGTH_LONG).show() }
+            }
+        }.start()
     }
 
     private fun shareCsv() {
