@@ -502,7 +502,7 @@ class MainActivity : Activity() {
     }
     private fun refreshContracts() {
         if (!::contractsPage.isInitialized) return
-        while (contractsPage.childCount > 4) contractsPage.removeViewAt(4)
+        while (contractsPage.childCount > 5) contractsPage.removeViewAt(5)
         contractItems.forEach { c ->
             val box = LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(12),dp(10),dp(12),dp(10)); setBackgroundColor(0xFFFFFFFF.toInt()) }
             box.addView(TextView(this).apply { text=c.name; textSize=16f; setTypeface(null,Typeface.BOLD); setTextColor(0xFF247A5A.toInt()) }, matchWrap())
@@ -536,7 +536,7 @@ class MainActivity : Activity() {
             .setPositiveButton("إضافة") { _, _ ->
                 val n=name.text.toString().trim(); val p=price.text.toString().replace(',','.').toDoubleOrNull(); val u=unit.text.toString().trim().ifBlank{"كغ"}; val m=method.text.toString().trim().ifBlank{"بيع"}
                 if(n.isBlank() || p==null || p<0) Toast.makeText(this,"أدخل اسم البند وسعراً صحيحاً",Toast.LENGTH_LONG).show()
-                else { if(contractItems.any{it.name==n}) Toast.makeText(this,"هذا البند موجود مسبقاً",Toast.LENGTH_SHORT).show() else { contractItems.add(ContractItem(n,p,u,m)); persistContracts(); refreshContracts(); Toast.makeText(this,"تمت إضافة البند",Toast.LENGTH_SHORT).show() } }
+                else { if(contractItems.any{it.name==n}) Toast.makeText(this,"هذا البند موجود مسبقاً",Toast.LENGTH_SHORT).show() else { contractItems.add(ContractItem(n,p,u,m)); typeSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,types); persistContracts(); refreshContracts(); Toast.makeText(this,"تمت إضافة البند",Toast.LENGTH_SHORT).show() } }
             }.show()
     }
     private fun showContractTerms() {
