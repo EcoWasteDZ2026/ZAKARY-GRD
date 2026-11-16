@@ -52,3 +52,9 @@ drop policy if exists production_owner_all on public.production_logs;
 create policy production_owner_all on public.production_logs for all to authenticated using(auth.uid()=user_id) with check(auth.uid()=user_id);
 drop trigger if exists audit_production_logs on public.production_logs;
 create trigger audit_production_logs after insert or update or delete on public.production_logs for each row execute function public.log_henkel_change();
+
+
+-- Upgrade existing installations: link each contract line to its buyer and classify every waste movement.
+alter table public.contract_items add column if not exists company_name text not null default 'SNC Groupe EL BADISSIA';
+alter table public.waste_records add column if not exists buyer_company text not null default '';
+alter table public.waste_records add column if not exists operation_type text not null default 'بيع مباشر';
