@@ -367,6 +367,25 @@ class MainActivity : Activity() {
             "هذا البند موجود مسبقاً في هذا العقد" to Pair("Cet article existe déjà dans ce contrat", "This item already exists in this contract"),
             "لا توجد بنود في العقد النشط." to Pair("Aucun article dans le contrat actif.", "No items in the active contract."),
             "مرجع الملحق / النسخة الجديدة" to Pair("Référence de l’avenant / nouvelle version", "Addendum reference / new version"),
+            "تم حفظ العملية بنجاح" to Pair("Opération enregistrée avec succès", "Transaction saved successfully"),
+            "مرجع وصل الخروج" to Pair("Référence du bon de sortie", "Dispatch note reference"),
+            "رقم الفاتورة" to Pair("Numéro de facture", "Invoice number"),
+            "تاريخ الفاتورة YYYY-MM-DD" to Pair("Date de facture AAAA-MM-JJ", "Invoice date YYYY-MM-DD"),
+            "حالة الدفع" to Pair("État du paiement", "Payment status"),
+            "تاريخ الدفع YYYY-MM-DD" to Pair("Date de paiement AAAA-MM-JJ", "Payment date YYYY-MM-DD"),
+            "قيم غير صحيحة؛ لم يتم حفظ التعديل." to Pair("Valeurs incorrectes ; modification non enregistrée.", "Invalid values; changes were not saved."),
+            "اسم نوع النفاية / البند" to Pair("Nom du déchet / article", "Waste type / item name"),
+            "السعر بالدينار (0 للإزالة المجانية)" to Pair("Prix en DZD (0 pour enlèvement gratuit)", "Price in DZD (0 for free removal)"),
+            "الصق محتوى JSON للنسخة الاحتياطية" to Pair("Collez le contenu JSON de la sauvegarde", "Paste backup JSON content"),
+            "انسخ محتوى النسخة الاحتياطية والصقه هنا. ستتم إضافة السجلات الجديدة دون تكرار المعرفات." to Pair("Collez le contenu JSON de la sauvegarde ; les nouveaux enregistrements seront ajoutés sans doublons.", "Paste the backup JSON; new records will be added without duplicate IDs."),
+            "تعذر قراءة النسخة. تأكد من نسخ JSON كاملًا." to Pair("Lecture impossible. Vérifiez que le JSON complet a été copié.", "Could not read backup. Make sure the full JSON was copied."),
+            "رابط Supabase: https://xxxx.supabase.co" to Pair("URL Supabase : https://xxxx.supabase.co", "Supabase URL: https://xxxx.supabase.co"),
+            "المفتاح العام Publishable / anon" to Pair("Clé publique Publishable / anon", "Public Publishable / anon key"),
+            "البريد الإلكتروني لحساب المزامنة" to Pair("E-mail du compte de synchronisation", "Sync account email"),
+            "كلمة مرور حساب Supabase" to Pair("Mot de passe du compte Supabase", "Supabase account password"),
+            "أكمل الرابط والمفتاح العام والبريد وكلمة المرور." to Pair("Complétez l’URL, la clé publique, l’e-mail et le mot de passe.", "Complete the URL, public key, email and password."),
+            "جارٍ الاتصال الآمن..." to Pair("Connexion sécurisée en cours...", "Connecting securely..."),
+            "تم ربط الهاتف ومزامنة البيانات بنجاح." to Pair("Téléphone connecté et données synchronisées.", "Phone connected and data synced successfully."),
             "ZAKARY GRD - نسخة احتياطية" to Pair("ZAKARY GRD - Sauvegarde", "ZAKARY GRD - Backup"),
             "تم استيراد " to Pair("Importé : ", "Imported "),
             " سجل" to Pair(" enregistrement(s)", " record(s)"),
@@ -727,7 +746,7 @@ class MainActivity : Activity() {
         }
         val income = (quantity ?: 0.0) * item.price
         if (!isValidIsoDate(date) || quantity == null || quantity <= 0) {
-            Toast.makeText(this, "تحقق من التاريخ والكمية.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, tr("تحقق من التاريخ والكمية."), Toast.LENGTH_LONG).show()
             return
         }
         val newId = UUID.randomUUID().toString()
@@ -742,7 +761,7 @@ class MainActivity : Activity() {
         renderRecords()
         refreshDashboard()
         refreshFinance()
-        Toast.makeText(this, "تم حفظ العملية بنجاح", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, tr("تم حفظ العملية بنجاح"), Toast.LENGTH_SHORT).show()
         showPage("dashboard")
     }
 
@@ -802,7 +821,7 @@ class MainActivity : Activity() {
             }, matchWrap())
             card.addView(TextView(this).apply {
                 text = tr("الكمية: ") + fmt(r.quantity) + " " + r.saleUnit + "\n" + tr("العقد: ") + r.contractReference + "\n" + tr("سعر الوحدة: ") + fmt(r.unitPrice) + " دج / " + r.saleUnit + "\n" + tr("العملية: ") + tr(r.operationType) + " | " + tr("الشركة: ") + r.buyerCompany.ifBlank { "—" } + "\n" + tr("الوجهة: ") + tr(r.destination) + "\n" + tr("مداخيل البيع: ") + fmt(r.income) + " دج\n" + tr("وصل الخروج: ") + r.dispatchReference.ifBlank { "—" } + " | " + tr("الفاتورة: ") + r.invoiceNumber.ifBlank { "—" } + "\n" + tr("حالة الدفع: ") + tr(r.paymentStatus) + " | " + tr("تاريخ الفاتورة: ") + r.invoiceDate.ifBlank { "—" } + " | " + tr("تاريخ الدفع: ") + r.paymentDate.ifBlank { "—" } + if (r.note.isBlank()) "" else "\n" + tr("ملاحظات: ") + r.note
-                    if (r.note.isBlank()) "" else "\nملاحظات: ${r.note}"
+                    if (r.note.isBlank()) "" else "\n" + tr("ملاحظات: ") + r.note
                 textSize = 14f
                 setTextColor(0xFF243746.toInt())
                 setPadding(0, dp(7), 0, dp(6))
@@ -833,11 +852,11 @@ class MainActivity : Activity() {
         val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(8), 0, dp(8), 0) }
         val q = EditText(this).apply { hint = tr("الكمية الإجمالية كغ"); setText(fmt(r.quantity)) }
         val income = EditText(this).apply { hint = tr("المداخيل دج (تحسب من العقد)"); setText(fmt(r.income)); isEnabled = false }
-        val dispatch = EditText(this).apply { hint = "مرجع وصل الخروج"; setText(r.dispatchReference) }
-        val invoiceNo = EditText(this).apply { hint = "رقم الفاتورة"; setText(r.invoiceNumber) }
-        val invoiceDate = EditText(this).apply { hint = "تاريخ الفاتورة YYYY-MM-DD"; setText(r.invoiceDate) }
-        val paymentStatus = EditText(this).apply { hint = "حالة الدفع"; setText(r.paymentStatus) }
-        val paymentDate = EditText(this).apply { hint = "تاريخ الدفع YYYY-MM-DD"; setText(r.paymentDate) }
+        val dispatch = EditText(this).apply { hint = tr("مرجع وصل الخروج"); setText(r.dispatchReference) }
+        val invoiceNo = EditText(this).apply { hint = tr("رقم الفاتورة"); setText(r.invoiceNumber) }
+        val invoiceDate = EditText(this).apply { hint = tr("تاريخ الفاتورة YYYY-MM-DD"); setText(r.invoiceDate) }
+        val paymentStatus = EditText(this).apply { hint = tr("حالة الدفع"); setText(tr(r.paymentStatus)) }
+        val paymentDate = EditText(this).apply { hint = tr("تاريخ الدفع YYYY-MM-DD"); setText(r.paymentDate) }
         listOf(q, income, dispatch, invoiceNo, invoiceDate, paymentStatus, paymentDate).forEach { panel.addView(it) }
         listOf(q, income).forEach { it.inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
 AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
@@ -846,7 +865,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
                 val nq = q.text.toString().replace(',', '.').toDoubleOrNull()
                 val niInput = income.text.toString().replace(',', '.').toDoubleOrNull()
                 if (nq == null || niInput == null || nq <= 0 || niInput < 0) {
-                    Toast.makeText(this, "قيم غير صحيحة؛ لم يتم حفظ التعديل.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, tr("قيم غير صحيحة؛ لم يتم حفظ التعديل."), Toast.LENGTH_LONG).show()
                 } else {
                     // Preserve the sale's original unit price; new contract prices affect future sales only.
                     val historicalUnitPrice = r.unitPrice.takeIf { it > 0.0 } ?: if (r.quantity > 0.0) r.income / r.quantity else 0.0
@@ -1039,8 +1058,8 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
     }
     private fun addContractItem() {
         val panel=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(8),0,dp(8),0) }
-        val name=EditText(this).apply { hint="اسم نوع النفاية / البند" }
-        val price=EditText(this).apply { hint="السعر بالدينار (0 للإزالة المجانية)"; inputType=android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
+        val name=EditText(this).apply { hint=tr("اسم نوع النفاية / البند") }
+        val price=EditText(this).apply { hint=tr("السعر بالدينار (0 للإزالة المجانية)"); inputType=android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
         val unit=EditText(this).apply { hint=tr("الوحدة: كغ أو وحدة"); setText(tr("كغ")) }
         val method=EditText(this).apply { hint=tr("طريقة التعامل: بيع / إزالة مجانية"); setText(tr("بيع")) }
         val company=EditText(this).apply { hint=tr("الشركة المتعاقدة / المشترية"); setText(activeContractCompany) }
@@ -1082,9 +1101,9 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
     }
 
     private fun importBackup() {
-        val input = EditText(this).apply { hint="الصق محتوى JSON للنسخة الاحتياطية"; minLines=5; gravity=Gravity.TOP or Gravity.RIGHT }
-        AlertDialog.Builder(this).setTitle("استيراد نسخة احتياطية")
-            .setMessage("انسخ محتوى النسخة الاحتياطية والصقه هنا. ستتم إضافة السجلات الجديدة دون تكرار المعرفات.")
+        val input = EditText(this).apply { hint=tr("الصق محتوى JSON للنسخة الاحتياطية"); minLines=5; gravity=Gravity.TOP or if (appLanguage == "ar") Gravity.RIGHT else Gravity.LEFT }
+        AlertDialog.Builder(this).setTitle(tr("استيراد نسخة احتياطية"))
+            .setMessage(tr("انسخ محتوى النسخة الاحتياطية والصقه هنا. ستتم إضافة السجلات الجديدة دون تكرار المعرفات."))
             .setView(input).setNegativeButton("إلغاء", null)
             .setPositiveButton("استيراد") { _, _ ->
                 try {
@@ -1100,7 +1119,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
                     persistRecords(); renderRecords(); refreshDashboard(); refreshFinance()
                     Toast.makeText(this, tr("تم استيراد ") + added + tr(" سجل"), Toast.LENGTH_LONG).show()
                 } catch (_: Exception) {
-                    Toast.makeText(this, "تعذر قراءة النسخة. تأكد من نسخ JSON كاملًا.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, tr("تعذر قراءة النسخة. تأكد من نسخ JSON كاملًا."), Toast.LENGTH_LONG).show()
                 }
             }.show()
     }
@@ -1138,10 +1157,10 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
 
     private fun showCloudDialog() {
         val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(10), dp(4), dp(10), dp(4)) }
-        val project = EditText(this).apply { hint = "رابط Supabase: https://xxxx.supabase.co"; setText(cloud.projectUrl()) }
-        val publicKey = EditText(this).apply { hint = "المفتاح العام Publishable / anon"; setText(cloud.publicKey()); textSize = 12f }
-        val email = EditText(this).apply { hint = "البريد الإلكتروني لحساب المزامنة"; setText(cloud.email()); inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS }
-        val password = EditText(this).apply { hint = "كلمة مرور حساب Supabase"; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD }
+        val project = EditText(this).apply { hint = tr("رابط Supabase: https://xxxx.supabase.co"); setText(cloud.projectUrl()) }
+        val publicKey = EditText(this).apply { hint = tr("المفتاح العام Publishable / anon"); setText(cloud.publicKey()); textSize = 12f }
+        val email = EditText(this).apply { hint = tr("البريد الإلكتروني لحساب المزامنة"); setText(cloud.email()); inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS }
+        val password = EditText(this).apply { hint = tr("كلمة مرور حساب Supabase"); inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD }
         listOf(project, publicKey, email, password).forEach { panel.addView(it, matchWrap()) }
         AlertDialog.Builder(this).setTitle(tr("ربط الهاتف بقاعدة هنكل المشتركة"))
             .setMessage(tr("أدخل رابط المشروع والمفتاح العام فقط، ثم سجّل الدخول بالحساب نفسه المستعمل على الحاسوب. لا تدخل مفتاح service_role."))
@@ -1154,11 +1173,11 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
                         val e = email.text.toString().trim()
                         val pw = password.text.toString()
                         if (!u.startsWith("https://") || k.isBlank() || e.isBlank() || pw.isBlank()) {
-                            Toast.makeText(this, "أكمل الرابط والمفتاح العام والبريد وكلمة المرور.", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this, tr("أكمل الرابط والمفتاح العام والبريد وكلمة المرور."), Toast.LENGTH_LONG).show()
                             return@setOnClickListener
                         }
                         dialog.dismiss()
-                        Toast.makeText(this, "جارٍ الاتصال الآمن...", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, tr("جارٍ الاتصال الآمن..."), Toast.LENGTH_SHORT).show()
                         Thread {
                             try {
                                 cloud.signIn(u, k, e, pw)
@@ -1170,7 +1189,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
                                     persistRecords(); persistContracts()
                                     if (::typeSpinner.isInitialized) typeSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, types)
                                     renderRecords(); refreshDashboard(); refreshFinance(); refreshContracts()
-                                    Toast.makeText(this, "تم ربط الهاتف ومزامنة البيانات بنجاح.", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(this, tr("تم ربط الهاتف ومزامنة البيانات بنجاح."), Toast.LENGTH_LONG).show()
                                 }
                             } catch (ex: Exception) {
                                 runOnUiThread { Toast.makeText(this, "تعذر الاتصال: " + (ex.message ?: "خطأ غير معروف"), Toast.LENGTH_LONG).show() }
