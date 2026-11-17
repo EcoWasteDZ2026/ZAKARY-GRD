@@ -367,6 +367,12 @@ class MainActivity : Activity() {
             "هذا البند موجود مسبقاً في هذا العقد" to Pair("Cet article existe déjà dans ce contrat", "This item already exists in this contract"),
             "لا توجد بنود في العقد النشط." to Pair("Aucun article dans le contrat actif.", "No items in the active contract."),
             "مرجع الملحق / النسخة الجديدة" to Pair("Référence de l’avenant / nouvelle version", "Addendum reference / new version"),
+            "أدخل مرجع العقد واسم الشركة وتاريخ سريان صحيح بصيغة YYYY-MM-DD." to Pair("Saisissez la référence, la société et une date d’effet valide au format AAAA-MM-JJ.", "Enter the contract reference, company and a valid effective date in YYYY-MM-DD format."),
+            "كغ" to Pair("kg", "kg"),
+            "بيع" to Pair("Vente", "Sale"),
+            "إزالة مجانية" to Pair("Enlèvement gratuit", "Free removal"),
+            "أدخل بيانات البند كاملة وسعراً وطريقة تعامل صحيحة." to Pair("Renseignez tous les champs, un prix et un mode de traitement valides.", "Enter all item details, a valid price and a valid handling method."),
+            "الطرف: HENKEL ALGÉRIE SPA\nالمشتري: SNC GROUPE EL BADISSIA\nمرجع الوثيقة: NEW CONTRAT 2026\nتاريخ السريان: 08-08-2026\nتاريخ التحرير: 29-09-2026\nالمدة: 12 شهراً، والتجديد بملحق موقع من الطرفين\nالفوترة: نهاية كل شهر\nالدفع: خلال 10 أيام من استلام الفاتورة\nالجمع: الأحد إلى الخميس، 08:00–16:00\nتقرير مفصل كل ثلاثة أشهر\nالأسعار شاملة الرسوم وثابتة طوال مدة العقد\nلا يجوز بيع النفايات داخل موقع هنكل، ولا الاستعانة بمشترٍ آخر دون موافقة كتابية مسبقة\n\nالأسعار والأنواع هي بنود العقد المرفق، وتظل قابلة للتعديل فقط بملحق تعاقدي موقع." to Pair("Partie : HENKEL ALGÉRIE SPA\\nAcheteur : SNC GROUPE EL BADISSIA\\nRéférence : NEW CONTRAT 2026\\nDate d’effet : 08-08-2026\\nDate de signature : 29-09-2026\\nDurée : 12 mois, renouvelable par avenant signé par les deux parties\\nFacturation : fin de chaque mois\\nPaiement : dans les 10 jours suivant la réception de la facture\\nCollecte : du dimanche au jeudi, 08:00–16:00\\nRapport détaillé chaque trimestre\\nPrix TTC et fixes pendant la durée du contrat\\nLa vente sur le site Henkel est interdite ; tout recours à un autre acheteur nécessite une autorisation écrite préalable\\n\\nLes prix et types de déchets sont ceux du contrat joint ; toute modification doit être effectuée par avenant signé.", "Party: HENKEL ALGÉRIE SPA\\nBuyer: SNC GROUPE EL BADISSIA\\nReference: NEW CONTRAT 2026\\nEffective date: 2026-08-08\\nSigned: 2026-09-29\\nTerm: 12 months, renewable by a signed addendum\\nInvoicing: month-end\\nPayment: within 10 days after invoice receipt\\nCollection: Sunday to Thursday, 08:00–16:00\\nDetailed quarterly report\\nPrices include taxes and remain fixed during the term\\nResale on the Henkel site is prohibited; use of another buyer requires prior written approval\\n\\nWaste types and prices are those in the attached contract; changes require a signed addendum."),
             "تاريخ سريان السعر الجديد YYYY-MM-DD" to Pair("Date d’effet du nouveau prix AAAA-MM-JJ", "New price effective date YYYY-MM-DD"),
             "اعتماد سعر جديد بملحق" to Pair("Appliquer le nouveau prix par avenant", "Apply new price by addendum"),
             "لن يتم استبدال العقد السابق. ستُنشأ نسخة تعاقدية جديدة ببنوده وأسعاره، وتبقى عمليات البيع السابقة مرتبطة بسعرها القديم." to Pair("L’ancien contrat ne sera pas remplacé. Une nouvelle version sera créée avec ses articles et tarifs ; les ventes antérieures garderont leurs anciens prix.", "The previous contract will not be overwritten. A new contract version will be created; previous sales keep their original prices."),
@@ -972,7 +978,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
         AlertDialog.Builder(this).setTitle(tr("إنشاء عقد جديد")).setView(panel)
             .setNegativeButton(tr("إلغاء"), null).setPositiveButton(tr("حفظ العقد")) { _, _ ->
                 val r = ref.text.toString().trim(); val c = company.text.toString().trim()
-                if (r.isBlank() || c.isBlank()) Toast.makeText(this, tr("أدخل مرجع العقد واسم الشركة."), Toast.LENGTH_LONG).show()
+                if (r.isBlank() || c.isBlank() || !isValidIsoDate(effective.text.toString().trim())) Toast.makeText(this, tr("أدخل مرجع العقد واسم الشركة وتاريخ سريان صحيح بصيغة YYYY-MM-DD."), Toast.LENGTH_LONG).show()
                 else {
                     if (contractItems.any { it.contractReference == r }) { Toast.makeText(this,tr("مرجع العقد موجود مسبقاً."),Toast.LENGTH_LONG).show(); return@setPositiveButton }
                     activeContractReference = r; activeContractCompany = c; activeContractEffectiveDate = effective.text.toString().trim()
@@ -1029,21 +1035,21 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
         val panel=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(8),0,dp(8),0) }
         val name=EditText(this).apply { hint="اسم نوع النفاية / البند" }
         val price=EditText(this).apply { hint="السعر بالدينار (0 للإزالة المجانية)"; inputType=android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
-        val unit=EditText(this).apply { hint="الوحدة: كغ أو وحدة"; setText("كغ") }
-        val method=EditText(this).apply { hint="طريقة التعامل: بيع / إزالة مجانية"; setText("بيع") }
+        val unit=EditText(this).apply { hint=tr("الوحدة: كغ أو وحدة"); setText(tr("كغ")) }
+        val method=EditText(this).apply { hint=tr("طريقة التعامل: بيع / إزالة مجانية"); setText(tr("بيع")) }
         val company=EditText(this).apply { hint=tr("الشركة المتعاقدة / المشترية"); setText(activeContractCompany) }
         val reference=EditText(this).apply { hint=tr("مرجع العقد / رقم العقد"); setText(activeContractReference) }
         listOf(name,price,unit,method,company,reference).forEach { panel.addView(it) }
         AlertDialog.Builder(this).setTitle(tr("إضافة بند تعاقدي جديد")).setView(panel).setNegativeButton(tr("إلغاء"),null)
             .setPositiveButton(tr("إضافة")) { _, _ ->
-                val n=name.text.toString().trim(); val p=price.text.toString().replace(',','.').toDoubleOrNull(); val u=unit.text.toString().trim().ifBlank{"كغ"}; val m=method.text.toString().trim().ifBlank{"بيع"}; val co=company.text.toString().trim(); val cr=reference.text.toString().trim()
-                if(n.isBlank() || p==null || p<0 || cr.isBlank() || co.isBlank() || u.isBlank()) Toast.makeText(this,tr("أدخل اسم البند وسعراً صحيحاً"),Toast.LENGTH_LONG).show()
+                val n=name.text.toString().trim(); val p=price.text.toString().replace(',','.').toDoubleOrNull(); val u=untr(unit.text.toString().trim()).ifBlank{"كغ"}; val m=untr(method.text.toString().trim()).ifBlank{"بيع"}; val co=company.text.toString().trim(); val cr=reference.text.toString().trim()
+                if(n.isBlank() || p==null || p<0 || cr.isBlank() || co.isBlank() || u.isBlank() || (m!="بيع" && m!="إزالة مجانية" && m!="غير قابل للبيع")) Toast.makeText(this,tr("أدخل بيانات البند كاملة وسعراً وطريقة تعامل صحيحة."),Toast.LENGTH_LONG).show()
                 else { if(contractItems.any{it.name==n && it.contractReference==cr}) Toast.makeText(this,tr("هذا البند موجود مسبقاً في هذا العقد"),Toast.LENGTH_SHORT).show() else { contractItems.add(ContractItem(n,p,u,m,co,cr,activeContractEffectiveDate)); activeContractReference=cr; activeContractCompany=co; val refs=contractItems.map { it.contractReference }.distinct(); contractSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,refs); contractSpinner.setSelection(refs.indexOf(cr)); typeSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,types.map { tr(it) }); persistContracts(); cloud.markContractsDirty(); refreshContracts(); if(cloud.connected()) syncCloud(false); Toast.makeText(this,tr("تمت إضافة البند"),Toast.LENGTH_SHORT).show() } }
             }.show()
     }
     private fun showContractTerms() {
-        AlertDialog.Builder(this).setTitle("بيانات عقد هنكل")
-            .setMessage("الطرف: HENKEL ALGÉRIE SPA\\nالمشتري: SNC GROUPE EL BADISSIA\\nمرجع الوثيقة: NEW CONTRAT 2026\\nتاريخ السريان: 08-08-2026\\nتاريخ التحرير: 29-09-2026\\nالمدة: 12 شهراً، والتجديد بملحق موقع من الطرفين\\nالفوترة: نهاية كل شهر\\nالدفع: خلال 10 أيام من استلام الفاتورة\\nالجمع: الأحد إلى الخميس، 08:00–16:00\\nتقرير مفصل كل ثلاثة أشهر\\nالأسعار شاملة الرسوم وثابتة طوال مدة العقد\\nلا يجوز بيع النفايات داخل موقع هنكل، ولا الاستعانة بمشترٍ آخر دون موافقة كتابية مسبقة\\n\\nالأسعار والأنواع هي بنود العقد المرفق، وتظل قابلة للتعديل فقط بملحق تعاقدي موقع.")
+        AlertDialog.Builder(this).setTitle(tr("بيانات عقد هنكل"))
+            .setMessage(tr("الطرف: HENKEL ALGÉRIE SPA\nالمشتري: SNC GROUPE EL BADISSIA\nمرجع الوثيقة: NEW CONTRAT 2026\nتاريخ السريان: 08-08-2026\nتاريخ التحرير: 29-09-2026\nالمدة: 12 شهراً، والتجديد بملحق موقع من الطرفين\nالفوترة: نهاية كل شهر\nالدفع: خلال 10 أيام من استلام الفاتورة\nالجمع: الأحد إلى الخميس، 08:00–16:00\nتقرير مفصل كل ثلاثة أشهر\nالأسعار شاملة الرسوم وثابتة طوال مدة العقد\nلا يجوز بيع النفايات داخل موقع هنكل، ولا الاستعانة بمشترٍ آخر دون موافقة كتابية مسبقة\n\nالأسعار والأنواع هي بنود العقد المرفق، وتظل قابلة للتعديل فقط بملحق تعاقدي موقع."))
             .setPositiveButton("إغلاق",null).show()
     }
 
