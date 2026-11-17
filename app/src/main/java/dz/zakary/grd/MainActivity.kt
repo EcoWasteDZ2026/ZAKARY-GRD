@@ -274,14 +274,14 @@ class MainActivity : Activity() {
             setBackgroundColor(0xFF173650.toInt())
         }
         hero.addView(TextView(this).apply {
-            text = "نظام تسيير واسترجاع النفايات الصناعية — مصنع هنكل، ولاية ميلة"
+            text = tr("نظام تسيير واسترجاع النفايات الصناعية — مصنع هنكل، ولاية ميلة")
             textSize = 20f
             setTypeface(null, Typeface.BOLD)
             setTextColor(0xFFFFFFFF.toInt())
             gravity = Gravity.RIGHT
         }, matchWrap())
         hero.addView(TextView(this).apply {
-            text = "HENKEL MILA • العقود • التتبع • التثمين • التقارير"
+            text = tr("HENKEL MILA • العقود • التتبع • التثمين • التقارير")
             textSize = 14f
             setTextColor(0xFFD8F4EA.toInt())
             gravity = Gravity.RIGHT
@@ -302,7 +302,7 @@ class MainActivity : Activity() {
             Triple("الإعدادات", "settings", "⚙")
         ).forEach { item ->
             val b = Button(this).apply {
-                text = "${item.third}  ${item.first}"
+                text = "${item.third}  ${tr(item.first)}"
                 isAllCaps = false
                 textSize = 13f
                 setOnClickListener { showPage(item.second) }
@@ -467,7 +467,7 @@ class MainActivity : Activity() {
 
     private fun spinner(parent: LinearLayout, items: List<String>): Spinner {
         val s = Spinner(this).apply {
-            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, items)
+            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, items.map { tr(it) })
             layoutDirection = if (appLanguage == "ar") View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
             setBackgroundColor(0xFFFFFFFF.toInt())
         }
