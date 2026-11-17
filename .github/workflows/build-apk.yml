@@ -6,9 +6,11 @@ on:
   push:
     branches:
       - henkel-apk-build
+    paths-ignore:
+      - 'docs/download/**'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -38,3 +40,16 @@ jobs:
           name: HENKEL-ZAKARY-GRD-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Publish public APK download
+        run: |
+          mkdir -p docs/download
+          cp app/build/outputs/apk/debug/app-debug.apk docs/download/ZAKARY-GRD.apk
+          cat > docs/download/index.html <<'EOF'
+          <!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ZAKARY GRD</title><body style="font-family:Arial;text-align:center;padding:40px"><h1>ZAKARY GRD</h1><p>تحميل تطبيق إدارة وبيع النفايات الصناعية</p><a href="ZAKARY-GRD.apk" download style="display:inline-block;padding:16px 24px;background:#146c43;color:white;text-decoration:none;border-radius:10px">تحميل التطبيق APK</a><p>لأجهزة Android. لتشغيله على Windows استخدم محاكي Android.</p></body></html>
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/download/ZAKARY-GRD.apk docs/download/index.html
+          git commit -m "Publish ZAKARY GRD public APK download" || exit 0
+          git push
