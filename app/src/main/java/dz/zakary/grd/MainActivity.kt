@@ -829,7 +829,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
         if (!::dashboardStats.isInitialized) return
         dashboardStats.removeAllViews()
         val sales = records.filter { it.operationType == "بيع مباشر" }
-        val unitGroups = sales.groupBy { contractItem(it.type)?.unit ?: "وحدة" }
+        val unitGroups = sales.groupBy { it.saleUnit }
         val total = unitGroups.entries.joinToString(" + ") { (unit, rows) -> "${fmt(rows.sumOf { it.quantity })} $unit" }.ifBlank { "0" }
         val income = sales.sumOf { it.income }
         dashboardStats.addView(metric(tr("إجمالي الكميات المسجلة"), total), matchWrap())
@@ -892,7 +892,7 @@ val unit=rows.firstOrNull()?.saleUnit ?: "وحدة"
         financePage.addView(actionButton("＋ تسجيل عملية بيع") { showPage("form") }, matchWrap())
         financePage.addView(TextView(this).apply { text=tr("تفصيل المداخيل حسب نوع النفاية"); textSize=19f; setTypeface(null,Typeface.BOLD); setTextColor(0xFF173650.toInt()); setPadding(0,dp(14),0,dp(8)) },matchWrap())
         sales.groupBy { it.type }.forEach { (type, rows) ->
-            val q=rows.sumOf { it.quantity }; val income=rows.sumOf { it.income }; val unit=contractItem(type)?.unit ?: "وحدة"
+            val q=rows.sumOf { it.quantity }; val income=rows.sumOf { it.income }; val unit=rows.firstOrNull()?.saleUnit ?: "وحدة"
             financePage.addView(metric(type, "${tr("الكمية المباعة: ")}${fmt(q)} $unit\n${tr("مداخيل البيع: ")}${fmt(income)} دج"), matchWrap())
         }
     }
@@ -1054,7 +1054,7 @@ if (subset.isEmpty()) null else { val unit = subset.firstOrNull()?.saleUnit ?: "
 
     private fun readRecord(o: JSONObject, id: String) = WasteRecord(id, o.optString("date"), o.optString("type"),
         o.optString("department"), o.optDouble("quantity"), o.optDouble("recovered"), o.optString("destination"),
-        o.optDouble("cost"), o.optDouble("income"), o.optString("note"), o.optString("buyerCompany"), o.optString("operationType", "بيع مباشر"), o.optString("dispatchReference"), o.optString("invoiceNumber"), o.optString("invoiceDate"), o.optString("paymentStatus", "غير محدد"), o.optString("paymentDate"), o.optString("contractReference","NEW CONTRAT 2026"), o.optDouble("unitPrice",0.0), o.optString("saleUnit","كغ"))
+        o.optDouble("cost"), o.optDouble("income"), o.optString("note"), o.optString("buyerCompany"), o.optString("operationType", "بيع مباشر"), o.optString("dispatchReference"), o.optString("invoiceNumber"), o.optString("invoiceDate"), o.optString("paymentStatus", "غير محدد"), o.optString("paymentDate"), o.optString("contractReference",contractItems.firstOrNull { it.name == o.optString("type") }?.contractReference ?: "NEW CONTRAT 2026"), o.optDouble("unitPrice", if (o.optDouble("quantity") > 0.0) o.optDouble("income") / o.optDouble("quantity") else 0.0), o.optString("saleUnit",contractItems.firstOrNull { it.name == o.optString("type") }?.unit ?: "كغ"))
 
     private fun persistRecords() {
         getSharedPreferences("zakary_grd", MODE_PRIVATE).edit().putString("records", toJson().toString()).apply()
@@ -1146,7 +1146,7 @@ if (subset.isEmpty()) null else { val unit = subset.firstOrNull()?.saleUnit ?: "
         val csv = buildString {
             append("Date,Type,Department,Quantity,Unit,Unit_Price_DZD,Buyer,Quantity_Sold,Sales_Income_DZD,Dispatch_Reference,Invoice,Payment_Status,Notes\n")
             records.filter { it.operationType == "بيع مباشر" }.forEach { r ->
-                append(listOf(r.date,r.type,r.department,fmt(r.quantity),contractItem(r.type)?.unit ?: "وحدة",fmt(contractItem(r.type)?.price ?: 0.0),r.buyerCompany,fmt(r.quantity),fmt(r.income),r.dispatchReference,r.invoiceNumber,r.paymentStatus,r.note)
+                append(listOf(r.date,r.type,r.department,fmt(r.quantity),r.saleUnit,fmt(r.unitPrice),r.buyerCompany,fmt(r.quantity),fmt(r.income),r.dispatchReference,r.invoiceNumber,r.paymentStatus,r.note)
                     .joinToString(",") { "\"" + it.replace("\"", "\"\"") + "\"" })
                 append("\n")
             }
