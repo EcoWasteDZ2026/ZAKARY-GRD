@@ -240,6 +240,8 @@ class MainActivity : Activity() {
             "فشلت المزامنة: " to Pair("Échec de la synchronisation : ", "Sync failed: "),
             "حول التطبيق" to Pair("À propos", "About"),
             "العقد المعتمد لهذه العملية" to Pair("Contrat applicable à cette opération", "Contract applied to this sale"),
+            "لا يمكن بيع هذا النوع دون بند بيع في العقد." to Pair("Ce déchet ne peut pas être vendu sans article de vente au contrat.", "This waste cannot be sold without a sales item in the contract."),
+            "الشركة المشترية يجب أن تطابق الشركة المحددة في العقد." to Pair("L’acheteur doit correspondre à l’entreprise indiquée dans le contrat.", "The buyer must match the company specified in the contract."),
             "لا تغيّر سعر عقد موقع إلا بناءً على ملحق تعاقدي موقع. سيُحفظ سعر كل عملية بيع بتاريخها.\\n" to Pair("Ne modifiez le prix d’un contrat signé qu’au moyen d’un avenant signé. Le prix de chaque vente sera conservé à sa date.\\n", "Change a signed contract price only through a signed addendum. Each sale’s price will be preserved as of its transaction date.\\n"),
             "حفظ السعر الجديد" to Pair("Enregistrer le nouveau prix", "Save new price"),
             "العقد: " to Pair("Contrat : ", "Contract: "),
@@ -679,14 +681,16 @@ class MainActivity : Activity() {
         val selectedType = untr(typeSpinner.selectedItem.toString())
         val operation = "بيع مباشر"
         val item = contractItem(selectedType)
+        if (item == null || item.method != "بيع") {
+            Toast.makeText(this, tr("لا يمكن بيع هذا النوع دون بند بيع في العقد."), Toast.LENGTH_LONG).show()
+            return
+        }
         val buyer = buyerInput.text.toString().trim()
-        val income = if (operation == "بيع مباشر") {
-            if (item == null || item.method != "بيع") {
-                Toast.makeText(this, "لا يمكن بيع هذا النوع دون بند بيع في العقد.", Toast.LENGTH_LONG).show(); return
-            }
-            if (buyer.isBlank() || buyer != item.companyName) { Toast.makeText(this, "الشركة المشترية يجب أن تطابق الشركة المحددة في العقد.", Toast.LENGTH_LONG).show(); return }
-            (quantity ?: 0.0) * item.price
-        } else 0.0
+        if (buyer.isBlank() || buyer != item.companyName) {
+            Toast.makeText(this, tr("الشركة المشترية يجب أن تطابق الشركة المحددة في العقد."), Toast.LENGTH_LONG).show()
+            return
+        }
+        val income = (quantity ?: 0.0) * item.price
         if (date.isBlank() || quantity == null || quantity <= 0) {
             Toast.makeText(this, "تحقق من التاريخ والكمية.", Toast.LENGTH_LONG).show()
             return
