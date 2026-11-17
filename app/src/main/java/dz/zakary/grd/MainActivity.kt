@@ -367,6 +367,12 @@ class MainActivity : Activity() {
             "هذا البند موجود مسبقاً في هذا العقد" to Pair("Cet article existe déjà dans ce contrat", "This item already exists in this contract"),
             "لا توجد بنود في العقد النشط." to Pair("Aucun article dans le contrat actif.", "No items in the active contract."),
             "مرجع الملحق / النسخة الجديدة" to Pair("Référence de l’avenant / nouvelle version", "Addendum reference / new version"),
+            "ZAKARY GRD - نسخة احتياطية" to Pair("ZAKARY GRD - Sauvegarde", "ZAKARY GRD - Backup"),
+            "تم استيراد " to Pair("Importé : ", "Imported "),
+            " سجل" to Pair(" enregistrement(s)", " record(s)"),
+            "أدخل رابط المشروع والمفتاح العام فقط، ثم سجّل الدخول بالحساب نفسه المستعمل على الحاسوب. لا تدخل مفتاح service_role." to Pair("Saisissez uniquement l’URL du projet et la clé publique, puis connectez-vous avec le même compte que sur l’ordinateur. N’utilisez jamais la clé service_role.", "Enter only the project URL and public key, then sign in with the same account used on the computer. Never enter the service_role key."),
+            "خطأ غير معروف" to Pair("Erreur inconnue", "Unknown error"),
+            "تحقق من الإنترنت وإعداد Supabase" to Pair("Vérifiez Internet et la configuration Supabase", "Check your internet connection and Supabase settings"),
             "أدخل مرجع العقد واسم الشركة وتاريخ سريان صحيح بصيغة YYYY-MM-DD." to Pair("Saisissez la référence, la société et une date d’effet valide au format AAAA-MM-JJ.", "Enter the contract reference, company and a valid effective date in YYYY-MM-DD format."),
             "كغ" to Pair("kg", "kg"),
             "بيع" to Pair("Vente", "Sale"),
@@ -1069,10 +1075,10 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
     private fun backupData() {
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "application/json"
-            putExtra(Intent.EXTRA_SUBJECT, "ZAKARY GRD - نسخة احتياطية")
+            putExtra(Intent.EXTRA_SUBJECT, tr("ZAKARY GRD - نسخة احتياطية"))
             putExtra(Intent.EXTRA_TEXT, toJson().toString())
         }
-        startActivity(Intent.createChooser(send, "حفظ أو مشاركة النسخة الاحتياطية"))
+        startActivity(Intent.createChooser(send, tr("حفظ أو مشاركة النسخة الاحتياطية")))
     }
 
     private fun importBackup() {
@@ -1092,7 +1098,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
                         }
                     }
                     persistRecords(); renderRecords(); refreshDashboard(); refreshFinance()
-                    Toast.makeText(this, "تم استيراد $added سجل", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, tr("تم استيراد ") + added + tr(" سجل"), Toast.LENGTH_LONG).show()
                 } catch (_: Exception) {
                     Toast.makeText(this, "تعذر قراءة النسخة. تأكد من نسخ JSON كاملًا.", Toast.LENGTH_LONG).show()
                 }
@@ -1137,9 +1143,9 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
         val email = EditText(this).apply { hint = "البريد الإلكتروني لحساب المزامنة"; setText(cloud.email()); inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS }
         val password = EditText(this).apply { hint = "كلمة مرور حساب Supabase"; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD }
         listOf(project, publicKey, email, password).forEach { panel.addView(it, matchWrap()) }
-        AlertDialog.Builder(this).setTitle("ربط الهاتف بقاعدة هنكل المشتركة")
-            .setMessage("أدخل رابط المشروع والمفتاح العام فقط، ثم سجّل الدخول بالحساب نفسه المستعمل على الحاسوب. لا تدخل مفتاح service_role.")
-            .setView(panel).setNegativeButton("إلغاء", null)
+        AlertDialog.Builder(this).setTitle(tr("ربط الهاتف بقاعدة هنكل المشتركة"))
+            .setMessage(tr("أدخل رابط المشروع والمفتاح العام فقط، ثم سجّل الدخول بالحساب نفسه المستعمل على الحاسوب. لا تدخل مفتاح service_role."))
+            .setView(panel).setNegativeButton(tr("إلغاء"), null)
             .setPositiveButton("اتصال ومزامنة", null).create().also { dialog ->
                 dialog.setOnShowListener {
                     dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
