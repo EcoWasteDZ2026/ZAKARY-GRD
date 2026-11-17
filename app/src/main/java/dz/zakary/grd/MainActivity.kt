@@ -264,7 +264,7 @@ class MainActivity : Activity() {
             "هل تريد حذف عملية " to Pair("Voulez-vous supprimer l’opération ", "Delete transaction "),
             " بتاريخ " to Pair(" du ", " dated "),
             "تعديل " to Pair("Modifier ", "Edit "),
-            "السعر:" to Pair("Prix :", "Price:")
+            "السعر:" to Pair("Prix :", "Price:"),
             "العربية" to Pair("Arabe", "Arabic"),
             "الشركة المشترية يجب أن تطابق الشركة المحددة في العقد." to Pair("L’acheteur doit correspondre à l’entreprise indiquée dans le contrat.", "Buyer must match the company specified in the contract."),
             "لا يمكن بيع هذا النوع دون بند بيع في العقد." to Pair("Ce type ne peut être vendu sans article de vente dans le contrat.", "This type cannot be sold without a sale item in the contract."),
