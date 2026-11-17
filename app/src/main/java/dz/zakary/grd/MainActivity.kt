@@ -29,7 +29,7 @@ data class WasteRecord(
     val id: String, val date: String, val type: String, val department: String,
     val quantity: Double, val recovered: Double, val destination: String,
     val cost: Double, val income: Double, val note: String, val buyerCompany: String = "", val operationType: String = "بيع مباشر",
-    val dispatchReference: String = "", val invoiceNumber: String = "", val invoiceDate: String = "", val paymentStatus: String = "غير محدد", val paymentDate: String = ""
+    val dispatchReference: String = "", val invoiceNumber: String = "", val invoiceDate: String = "", val paymentStatus: String = "غير محدد", val paymentDate: String = "", val contractReference: String = "NEW CONTRAT 2026", val unitPrice: Double = 0.0, val saleUnit: String = "كغ"
 )
 
 class MainActivity : Activity() {
@@ -48,7 +48,7 @@ class MainActivity : Activity() {
         ContractItem("أكياس وأغلفة PE ملوثة بالمنظفات وغير قابلة للاسترجاع", 0.0, "حسب الكمية", "غير قابل للبيع")
     )
     private val types get() = contractItems.filter { it.contractReference == activeContractReference }.map { it.name } + listOf("نفايات صناعية أخرى (تُضاف لاحقاً)")
-    private fun contractItem(name: String) = contractItems.find { it.name == name }
+    private fun contractItem(name: String) = contractItems.find { it.name == name && it.contractReference == activeContractReference }
     private val departments = listOf("الإنتاج", "المخازن", "الصيانة", "المخبر", "معالجة المياه", "الإدارة", "أخرى")
     private val destinations = listOf("خروج إلى الشركة المشترية", "أخرى")
     private val pages = mutableMapOf<String, LinearLayout>()
@@ -239,6 +239,7 @@ class MainActivity : Activity() {
             "تمت المزامنة بين الهاتف والحاسوب." to Pair("Synchronisation entre téléphone et ordinateur terminée.", "Phone and computer sync completed."),
             "فشلت المزامنة: " to Pair("Échec de la synchronisation : ", "Sync failed: "),
             "حول التطبيق" to Pair("À propos", "About"),
+            "العقد المعتمد لهذه العملية" to Pair("Contrat applicable à cette opération", "Contract applied to this sale"),
             "العربية" to Pair("Arabe", "Arabic"),
             "الشركة المشترية يجب أن تطابق الشركة المحددة في العقد." to Pair("L’acheteur doit correspondre à l’entreprise indiquée dans le contrat.", "Buyer must match the company specified in the contract."),
             "لا يمكن بيع هذا النوع دون بند بيع في العقد." to Pair("Ce type ne peut être vendu sans article de vente dans le contrat.", "This type cannot be sold without a sale item in the contract."),
@@ -338,6 +339,8 @@ class MainActivity : Activity() {
             "تعديل سعر بند" to Pair("Modifier le prix d’un article", "Edit item price"),
             "عرض قائمة البنود والأسعار" to Pair("Afficher les articles et les tarifs", "View items and prices"),
             "هذا البند موجود مسبقاً في هذا العقد" to Pair("Cet article existe déjà dans ce contrat", "This item already exists in this contract"),
+            "لا توجد بنود في العقد النشط." to Pair("Aucun article dans le contrat actif.", "No items in the active contract."),
+            "مرجع العقد موجود مسبقاً." to Pair("Cette référence de contrat existe déjà.", "This contract reference already exists."),
             "أدخل مرجع العقد واسم الشركة." to Pair("Saisissez la référence du contrat et le nom de l’entreprise.", "Enter the contract reference and company name."),
             "تم إنشاء العقد. أضف بنوده وأسعاره الآن." to Pair("Contrat créé. Ajoutez maintenant ses articles et tarifs.", "Contract created. Add its items and prices now."),
             "إجمالي الكميات المسجلة" to Pair("Quantités totales enregistrées", "Total recorded quantities"),
@@ -475,6 +478,7 @@ class MainActivity : Activity() {
 
         formPage = newPage("تسجيل عملية نفايات")
         dateInput = field(formPage, "التاريخ (YYYY-MM-DD)").apply { setText(today()) }
+        formPage.addView(TextView(this).apply { text=tr("العقد المعتمد لهذه العملية"); textSize=14f; setTypeface(null,Typeface.BOLD) }, matchWrap())
         contractSpinner = spinner(formPage, contractItems.map { it.contractReference }.distinct())
         contractSpinner.setSelection((contractItems.map { it.contractReference }.distinct().indexOf(activeContractReference)).coerceAtLeast(0))
         typeSpinner = spinner(formPage, types)
@@ -671,7 +675,7 @@ class MainActivity : Activity() {
         records.add(0, WasteRecord(newId, date, selectedType,
             untr(departmentSpinner.selectedItem.toString()), quantity, recovered, untr(destinationSpinner.selectedItem.toString()),
             cost, income, noteInput.text.toString().trim(), if (operation == "بيع مباشر") buyer else "", operation,
-            dispatchInput.text.toString().trim(), invoiceNumberInput.text.toString().trim(), invoiceDateInput.text.toString().trim(), untr(paymentStatusSpinner.selectedItem.toString()), paymentDateInput.text.toString().trim()))
+            dispatchInput.text.toString().trim(), invoiceNumberInput.text.toString().trim(), invoiceDateInput.text.toString().trim(), untr(paymentStatusSpinner.selectedItem.toString()), paymentDateInput.text.toString().trim(), activeContractReference, item.price, item.unit))
         persistRecords()
         cloud.markRecordDirty(newId)
         if (cloud.connected()) syncCloud(false)
@@ -786,7 +790,7 @@ class MainActivity : Activity() {
                     Toast.makeText(this, "قيم غير صحيحة؛ لم يتم حفظ التعديل.", Toast.LENGTH_LONG).show()
                 } else {
                     // Preserve the sale's original unit price; new contract prices affect future sales only.
-                    val historicalUnitPrice = if (r.quantity > 0.0) r.income / r.quantity else 0.0
+                    val historicalUnitPrice = r.unitPrice.takeIf { it > 0.0 } ?: if (r.quantity > 0.0) r.income / r.quantity else 0.0
                     val ni = if (r.operationType == "بيع مباشر") nq * historicalUnitPrice else 0.0
                     val index = records.indexOfFirst { it.id == r.id }
                     if (index >= 0) records[index] = r.copy(quantity=nq, income=ni, dispatchReference=dispatch.text.toString().trim(), invoiceNumber=invoiceNo.text.toString().trim(), invoiceDate=invoiceDate.text.toString().trim(), paymentStatus=paymentStatus.text.toString().trim().ifBlank { "غير محدد" }, paymentDate=paymentDate.text.toString().trim())
@@ -920,8 +924,13 @@ class MainActivity : Activity() {
                 val r = ref.text.toString().trim(); val c = company.text.toString().trim()
                 if (r.isBlank() || c.isBlank()) Toast.makeText(this, tr("أدخل مرجع العقد واسم الشركة."), Toast.LENGTH_LONG).show()
                 else {
+                    if (contractItems.any { it.contractReference == r }) { Toast.makeText(this,tr("مرجع العقد موجود مسبقاً."),Toast.LENGTH_LONG).show(); return@setPositiveButton }
                     activeContractReference = r; activeContractCompany = c
                     getSharedPreferences("henkel_contracts", MODE_PRIVATE).edit().putString("active_reference", r).putString("active_company", c).putString("active_effective", effective.text.toString().trim()).apply()
+                    val refs=contractItems.map { it.contractReference }.distinct() + r
+                    if (::contractSpinner.isInitialized) { contractSpinner.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,refs); contractSpinner.setSelection(refs.lastIndex) }
+                    if (::typeSpinner.isInitialized) typeSpinner.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item, emptyList<String>())
+                    persistContracts(); cloud.markContractsDirty()
                     Toast.makeText(this, tr("تم إنشاء العقد. أضف بنوده وأسعاره الآن."), Toast.LENGTH_LONG).show()
                     addContractItem()
                 }
@@ -930,15 +939,17 @@ class MainActivity : Activity() {
 
     private fun editContractPrices() {
         if (contractItems.isEmpty()) return
-        val labels=contractItems.map { it.name }.toTypedArray()
-        AlertDialog.Builder(this).setTitle("اختر بنداً لتعديل سعره").setItems(labels) { _, which ->
-            val c=contractItems[which]
+        val editableItems=contractItems.filter { it.contractReference == activeContractReference }
+        if (editableItems.isEmpty()) { Toast.makeText(this,tr("لا توجد بنود في العقد النشط."),Toast.LENGTH_SHORT).show(); return }
+        val labels=editableItems.map { it.name + " — " + fmt(it.price) + " " + it.unit }.toTypedArray()
+        AlertDialog.Builder(this).setTitle(tr("اختر بنداً لتعديل سعره")).setItems(labels) { _, which ->
+            val c=editableItems[which]
             val input=EditText(this).apply { hint="السعر بالدينار لكل ${c.unit}"; setText(c.price.toString()); inputType=android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
-            AlertDialog.Builder(this).setTitle("تعديل السعر").setMessage(c.name).setView(input)
-                .setNegativeButton("إلغاء",null).setPositiveButton("حفظ") { _, _ ->
+            AlertDialog.Builder(this).setTitle(tr("تعديل السعر")).setMessage(c.name).setView(input)
+                .setNegativeButton(tr("إلغاء"),null).setPositiveButton(tr("حفظ")) { _, _ ->
                     val v=input.text.toString().replace(',','.').toDoubleOrNull()
-                    if(v==null || v<0) Toast.makeText(this,"سعر غير صحيح",Toast.LENGTH_SHORT).show()
-                    else { c.price=v; persistContracts(); cloud.markContractsDirty(); refreshContracts(); if(cloud.connected()) syncCloud(false); Toast.makeText(this,"تم تحديث السعر",Toast.LENGTH_SHORT).show() }
+                    if(v==null || v<0) Toast.makeText(this,tr("سعر غير صحيح"),Toast.LENGTH_SHORT).show()
+                    else { c.price=v; persistContracts(); cloud.markContractsDirty(); refreshContracts(); updateIncomePreview(); if(cloud.connected()) syncCloud(false); Toast.makeText(this,tr("تم تحديث السعر"),Toast.LENGTH_SHORT).show() }
                 }.show()
         }.show()
     }
@@ -951,10 +962,10 @@ class MainActivity : Activity() {
         val company=EditText(this).apply { hint=tr("الشركة المتعاقدة / المشترية"); setText(activeContractCompany) }
         val reference=EditText(this).apply { hint=tr("مرجع العقد / رقم العقد"); setText(activeContractReference) }
         listOf(name,price,unit,method,company,reference).forEach { panel.addView(it) }
-        AlertDialog.Builder(this).setTitle("إضافة بند تعاقدي جديد").setView(panel).setNegativeButton("إلغاء",null)
-            .setPositiveButton("إضافة") { _, _ ->
+        AlertDialog.Builder(this).setTitle(tr("إضافة بند تعاقدي جديد")).setView(panel).setNegativeButton(tr("إلغاء"),null)
+            .setPositiveButton(tr("إضافة")) { _, _ ->
                 val n=name.text.toString().trim(); val p=price.text.toString().replace(',','.').toDoubleOrNull(); val u=unit.text.toString().trim().ifBlank{"كغ"}; val m=method.text.toString().trim().ifBlank{"بيع"}; val co=company.text.toString().trim(); val cr=reference.text.toString().trim()
-                if(n.isBlank() || p==null || p<0) Toast.makeText(this,"أدخل اسم البند وسعراً صحيحاً",Toast.LENGTH_LONG).show()
+                if(n.isBlank() || p==null || p<0 || cr.isBlank() || co.isBlank() || u.isBlank()) Toast.makeText(this,tr("أدخل اسم البند وسعراً صحيحاً"),Toast.LENGTH_LONG).show()
                 else { if(contractItems.any{it.name==n && it.contractReference==cr}) Toast.makeText(this,tr("هذا البند موجود مسبقاً في هذا العقد"),Toast.LENGTH_SHORT).show() else { contractItems.add(ContractItem(n,p,u,m,co,cr)); activeContractReference=cr; activeContractCompany=co; val refs=contractItems.map { it.contractReference }.distinct(); contractSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,refs); contractSpinner.setSelection(refs.indexOf(cr)); typeSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,types.map { tr(it) }); persistContracts(); cloud.markContractsDirty(); refreshContracts(); if(cloud.connected()) syncCloud(false); Toast.makeText(this,tr("تمت إضافة البند"),Toast.LENGTH_SHORT).show() } }
             }.show()
     }
@@ -1012,14 +1023,14 @@ class MainActivity : Activity() {
         records.forEach { r -> a.put(JSONObject().apply {
             put("id",r.id); put("date",r.date); put("type",r.type); put("department",r.department)
             put("quantity",r.quantity); put("recovered",r.recovered); put("destination",r.destination)
-            put("cost",r.cost); put("income",r.income); put("note",r.note); put("buyerCompany",r.buyerCompany); put("operationType",r.operationType); put("dispatchReference",r.dispatchReference); put("invoiceNumber",r.invoiceNumber); put("invoiceDate",r.invoiceDate); put("paymentStatus",r.paymentStatus); put("paymentDate",r.paymentDate)
+            put("cost",r.cost); put("income",r.income); put("note",r.note); put("buyerCompany",r.buyerCompany); put("operationType",r.operationType); put("dispatchReference",r.dispatchReference); put("invoiceNumber",r.invoiceNumber); put("invoiceDate",r.invoiceDate); put("paymentStatus",r.paymentStatus); put("paymentDate",r.paymentDate); put("contractReference",r.contractReference); put("unitPrice",r.unitPrice); put("saleUnit",r.saleUnit)
         }) }
         return a
     }
 
     private fun readRecord(o: JSONObject, id: String) = WasteRecord(id, o.optString("date"), o.optString("type"),
         o.optString("department"), o.optDouble("quantity"), o.optDouble("recovered"), o.optString("destination"),
-        o.optDouble("cost"), o.optDouble("income"), o.optString("note"), o.optString("buyerCompany"), o.optString("operationType", "بيع مباشر"), o.optString("dispatchReference"), o.optString("invoiceNumber"), o.optString("invoiceDate"), o.optString("paymentStatus", "غير محدد"), o.optString("paymentDate"))
+        o.optDouble("cost"), o.optDouble("income"), o.optString("note"), o.optString("buyerCompany"), o.optString("operationType", "بيع مباشر"), o.optString("dispatchReference"), o.optString("invoiceNumber"), o.optString("invoiceDate"), o.optString("paymentStatus", "غير محدد"), o.optString("paymentDate"), o.optString("contractReference","NEW CONTRAT 2026"), o.optDouble("unitPrice",0.0), o.optString("saleUnit","كغ"))
 
     private fun persistRecords() {
         getSharedPreferences("zakary_grd", MODE_PRIVATE).edit().putString("records", toJson().toString()).apply()
