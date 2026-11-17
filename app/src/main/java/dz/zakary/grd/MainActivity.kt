@@ -58,6 +58,9 @@ class MainActivity : Activity() {
     private lateinit var financePage: LinearLayout
     private lateinit var reportsPage: LinearLayout
     private lateinit var contractsPage: LinearLayout
+    private lateinit var settingsPage: LinearLayout
+    private lateinit var languageSpinner: Spinner
+    private var appLanguage: String = "ar"
     private lateinit var dashboardStats: LinearLayout
     private lateinit var recordList: LinearLayout
     private lateinit var dateInput: EditText
@@ -81,6 +84,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        appLanguage = getSharedPreferences("zakary_settings", MODE_PRIVATE).getString("language", "ar") ?: "ar"
         loadRecords()
         loadContracts()
         restoreProduction()
@@ -142,7 +146,8 @@ class MainActivity : Activity() {
             Triple("السجلات", "records", "☷"),
             Triple("مداخيل البيع", "finance", "دج"),
             Triple("التقارير والنسخ", "reports", "⇩"),
-            Triple("العقود والأسعار", "contracts", "§")
+            Triple("العقود والأسعار", "contracts", "§"),
+            Triple("الإعدادات", "settings", "⚙")
         ).forEach { item ->
             val b = Button(this).apply {
                 text = "${item.third}  ${item.first}"
@@ -238,6 +243,18 @@ class MainActivity : Activity() {
         contractsPage.addView(actionButton("مزامنة العقود") { syncCloud(true) }, matchWrap())
         pages["contracts"] = contractsPage
 
+        settingsPage = newPage("الإعدادات")
+        settingsPage.addView(TextView(this).apply { text = "اللغة الشخصية للتطبيق"; textSize = 18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()) }, matchWrap())
+        settingsPage.addView(TextView(this).apply { text = "اختر لغة واجهة التطبيق على هذا الجهاز. الاختيار محفوظ بشكل مستقل ولا يغيّر إعدادات بقية المستخدمين."; textSize = 14f; setTextColor(0xFF526575.toInt()); setPadding(0, dp(6), 0, dp(10)) }, matchWrap())
+        languageSpinner = spinner(settingsPage, listOf("العربية", "Français", "English"))
+        languageSpinner.setSelection(when (appLanguage) { "fr" -> 1; "en" -> 2; else -> 0 })
+        settingsPage.addView(actionButton("حفظ اللغة المختارة") { saveLanguagePreference() }, matchWrap())
+        settingsPage.addView(TextView(this).apply { text = "إعدادات إضافية"; textSize = 18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()); setPadding(0, dp(18), 0, dp(8)) }, matchWrap())
+        settingsPage.addView(actionButton("النسخ الاحتياطي واسترجاع البيانات") { backupData() }, matchWrap())
+        settingsPage.addView(actionButton("إعدادات المزامنة") { showCloudDialog() }, matchWrap())
+        settingsPage.addView(actionButton("حول التطبيق") { AlertDialog.Builder(this).setTitle("HENKEL ALGÉRIE – ZAKARY GRD").setMessage("نظام متابعة بيع النفايات الصناعية وإدارة العقود والتقارير.").setPositiveButton("إغلاق", null).show() }, matchWrap())
+        pages["settings"] = settingsPage
+
         refreshDashboard()
         refreshFinance()
     }
@@ -261,7 +278,7 @@ class MainActivity : Activity() {
         return page
     }
 
-    private fun showPage(name: String) {
+    private fun saveLanguagePreference() {\n        appLanguage = when (languageSpinner.selectedItemPosition) { 1 -> "fr"; 2 -> "en"; else -> "ar" }\n        getSharedPreferences("zakary_settings", MODE_PRIVATE).edit().putString("language", appLanguage).apply()\n        val direction = if (appLanguage == "ar") View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR\n        root.layoutDirection = direction\n        contentHost.layoutDirection = direction\n        Toast.makeText(this, "تم حفظ تفضيل اللغة على هذا الجهاز. ستُستكمل ترجمة جميع الشاشات في تحديث الترجمة.", Toast.LENGTH_LONG).show()\n    }\n\n    private fun showPage(name: String) {
         currentPage = name
         pages.values.forEach { it.visibility = if (it === pages[name]) View.VISIBLE else View.GONE }
         if (name == "dashboard") refreshDashboard()
