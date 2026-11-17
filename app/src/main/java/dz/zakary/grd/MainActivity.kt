@@ -253,8 +253,7 @@ class MainActivity : Activity() {
             "وحدة" to Pair("unité", "unit"),
             "حسب الكمية" to Pair("Selon quantité", "By quantity"),
             "غير قابل للبيع" to Pair("Non vendable", "Not for sale"),
-            "طريقة التعامل: " to Pair("Mode : ", "Method: ")
-
+            "طريقة التعامل: " to Pair("Mode : ", "Method: "),
             "⚙  الإعدادات واللغة" to Pair("⚙  Paramètres et langue", "⚙  Settings & language"),
             "＋ تسجيل نفايات جديدة" to Pair("＋ Nouvelle vente de déchets", "＋ Register waste sale"),
             "☷ عرض السجلات" to Pair("☷ Consulter les registres", "☷ View records"),
