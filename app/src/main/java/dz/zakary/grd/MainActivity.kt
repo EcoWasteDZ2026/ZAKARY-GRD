@@ -240,7 +240,20 @@ class MainActivity : Activity() {
             "الشركة المشترية يجب أن تطابق الشركة المحددة في العقد." to Pair("L’acheteur doit correspondre à l’entreprise indiquée dans le contrat.", "Buyer must match the company specified in the contract."),
             "لا يمكن بيع هذا النوع دون بند بيع في العقد." to Pair("Ce type ne peut être vendu sans article de vente dans le contrat.", "This type cannot be sold without a sale item in the contract."),
             "تحقق من التاريخ والكمية." to Pair("Vérifiez la date et la quantité.", "Check the date and quantity."),
-            "أدخل كمية صحيحة أكبر من صفر." to Pair("Saisissez une quantité valide supérieure à zéro.", "Enter a valid quantity greater than zero.")
+            "أدخل كمية صحيحة أكبر من صفر." to Pair("Saisissez une quantité valide supérieure à zéro.", "Enter a valid quantity greater than zero."),
+            "صناديق كرتونية ونفايات الورق" to Pair("Cartons et déchets de papier", "Cardboard boxes and paper waste"),
+            "الأغلفة البلاستيكية (المطاطية وأغلفة التغليف)" to Pair("Films plastiques et emballages", "Plastic wrapping films and packaging"),
+            "أكياس Big Bags" to Pair("Sacs Big Bags", "Big Bags"),
+            "براميل معدنية" to Pair("Fûts métalliques", "Metal drums"),
+            "نفايات المنصات الخشبية وبقايا الخشب" to Pair("Palettes et chutes de bois", "Wooden pallets and wood scraps"),
+            "أكياس وأغلفة PE ملوثة بالمنظفات وغير قابلة للاسترجاع" to Pair("Sacs et emballages PE contaminés par des détergents, non valorisables", "PE bags and packaging contaminated with detergents, not recoverable"),
+            "نفايات صناعية أخرى (تُضاف لاحقاً)" to Pair("Autres déchets industriels (à ajouter)", "Other industrial waste (to be added)"),
+            "بيع مباشر" to Pair("Vente directe", "Direct sale"),
+            "كغ" to Pair("kg", "kg"),
+            "وحدة" to Pair("unité", "unit"),
+            "حسب الكمية" to Pair("Selon quantité", "By quantity"),
+            "غير قابل للبيع" to Pair("Non vendable", "Not for sale"),
+            "طريقة التعامل: " to Pair("Mode : ", "Method: ")
         )
         val pair = translations[value] ?: return value
         return if (appLanguage == "fr") pair.first else pair.second
