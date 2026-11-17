@@ -23,7 +23,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
-data class ContractItem(val name: String, var price: Double, var unit: String, var method: String, var companyName: String = "", var contractReference: String = "NEW CONTRAT 2026")
+data class ContractItem(val name: String, var price: Double, var unit: String, var method: String, var companyName: String = "", var contractReference: String = "NEW CONTRAT 2026", var effectiveDate: String = "2026-08-08")
 
 data class WasteRecord(
     val id: String, val date: String, val type: String, val department: String,
@@ -39,6 +39,7 @@ class MainActivity : Activity() {
     private lateinit var productionInput: EditText
     private var activeContractReference = "NEW CONTRAT 2026"
     private var activeContractCompany = "SNC Groupe EL BADISSIA"
+    private var activeContractEffectiveDate = "2026-08-08"
     private val contractItems = mutableListOf(
         ContractItem("صناديق كرتونية ونفايات الورق", 2.40, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
         ContractItem("الأغلفة البلاستيكية (المطاطية وأغلفة التغليف)", 5.40, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
@@ -518,6 +519,7 @@ class MainActivity : Activity() {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
                 activeContractReference = contractSpinner.selectedItem?.toString() ?: activeContractReference
                 activeContractCompany = contractItems.firstOrNull { it.contractReference == activeContractReference }?.companyName ?: activeContractCompany
+                activeContractEffectiveDate = contractItems.firstOrNull { it.contractReference == activeContractReference }?.effectiveDate ?: activeContractEffectiveDate
                 typeSpinner.adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item,
                     contractItems.filter { it.contractReference == activeContractReference }.map { tr(it.name) } + tr("نفايات صناعية أخرى (تُضاف لاحقاً)"))
                 updateIncomePreview()
@@ -914,7 +916,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
 
     private fun persistContracts() {
         val a = JSONArray()
-        contractItems.forEach { c -> a.put(JSONObject().apply { put("name",c.name); put("price",c.price); put("unit",c.unit); put("method",c.method); put("companyName",c.companyName); put("contractReference",c.contractReference) }) }
+        contractItems.forEach { c -> a.put(JSONObject().apply { put("name",c.name); put("price",c.price); put("unit",c.unit); put("method",c.method); put("companyName",c.companyName); put("contractReference",c.contractReference); put("effectiveDate",c.effectiveDate) }) }
         getSharedPreferences("henkel_contracts", MODE_PRIVATE).edit().putString("items", a.toString()).apply()
     }
     private fun loadContracts() {
@@ -922,9 +924,10 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
             val raw = getSharedPreferences("henkel_contracts", MODE_PRIVATE).getString("items", null) ?: return
             val a = JSONArray(raw); if (a.length() == 0) return
             contractItems.clear()
-            for (i in 0 until a.length()) { val o=a.getJSONObject(i); contractItems.add(ContractItem(o.optString("name"),o.optDouble("price"),o.optString("unit","كغ"),o.optString("method","بيع"),o.optString("companyName").ifBlank { if (o.optString("method","بيع")=="بيع") "SNC Groupe EL BADISSIA" else "" },o.optString("contractReference","NEW CONTRAT 2026"))) }
+            for (i in 0 until a.length()) { val o=a.getJSONObject(i); contractItems.add(ContractItem(o.optString("name"),o.optDouble("price"),o.optString("unit","كغ"),o.optString("method","بيع"),o.optString("companyName").ifBlank { if (o.optString("method","بيع")=="بيع") "SNC Groupe EL BADISSIA" else "" },o.optString("contractReference","NEW CONTRAT 2026"),o.optString("effectiveDate","2026-08-08"))) }
             activeContractReference = getSharedPreferences("henkel_contracts", MODE_PRIVATE).getString("active_reference", contractItems.lastOrNull()?.contractReference ?: activeContractReference) ?: activeContractReference
             activeContractCompany = getSharedPreferences("henkel_contracts", MODE_PRIVATE).getString("active_company", contractItems.lastOrNull()?.companyName ?: activeContractCompany) ?: activeContractCompany
+            activeContractEffectiveDate = getSharedPreferences("henkel_contracts", MODE_PRIVATE).getString("active_effective", contractItems.firstOrNull { it.contractReference == activeContractReference }?.effectiveDate ?: activeContractEffectiveDate) ?: activeContractEffectiveDate
         } catch (_: Exception) { }
     }
     private fun refreshContracts() {
@@ -933,7 +936,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
         contractItems.forEach { c ->
             val box = LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(12),dp(10),dp(12),dp(10)); setBackgroundColor(0xFFFFFFFF.toInt()) }
             box.addView(TextView(this).apply { text=c.name; textSize=16f; setTypeface(null,Typeface.BOLD); setTextColor(0xFF247A5A.toInt()) }, matchWrap())
-            box.addView(TextView(this).apply { text=tr("مرجع العقد: ") + c.contractReference; textSize=12f; setTextColor(0xFF607583.toInt()) }, matchWrap())
+            box.addView(TextView(this).apply { text=tr("مرجع العقد: ") + c.contractReference + "\n" + tr("تاريخ السريان: ") + c.effectiveDate; textSize=12f; setTextColor(0xFF607583.toInt()) }, matchWrap())
             box.addView(TextView(this).apply { text="${tr("الشركة: ")}${c.companyName.ifBlank { tr("غير محددة") }}\n"+(if(c.method=="غير قابل للبيع") tr("هذا النوع غير مدرج للبيع في العقد") else "${tr("السعر: ")}${fmt(c.price)} دج / ${c.unit}  •  ${tr("طريقة التعامل: ")}${tr(c.method)}"); textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(5),0,0) }, matchWrap())
             val p=LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); p.bottomMargin=dp(8); contractsPage.addView(box,p)
         }
@@ -964,8 +967,8 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
                 if (r.isBlank() || c.isBlank()) Toast.makeText(this, tr("أدخل مرجع العقد واسم الشركة."), Toast.LENGTH_LONG).show()
                 else {
                     if (contractItems.any { it.contractReference == r }) { Toast.makeText(this,tr("مرجع العقد موجود مسبقاً."),Toast.LENGTH_LONG).show(); return@setPositiveButton }
-                    activeContractReference = r; activeContractCompany = c
-                    getSharedPreferences("henkel_contracts", MODE_PRIVATE).edit().putString("active_reference", r).putString("active_company", c).putString("active_effective", effective.text.toString().trim()).apply()
+                    activeContractReference = r; activeContractCompany = c; activeContractEffectiveDate = effective.text.toString().trim()
+                    getSharedPreferences("henkel_contracts", MODE_PRIVATE).edit().putString("active_reference", r).putString("active_company", c).putString("active_effective", activeContractEffectiveDate).apply()
                     val refs=contractItems.map { it.contractReference }.distinct() + r
                     if (::contractSpinner.isInitialized) { contractSpinner.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,refs); contractSpinner.setSelection(refs.lastIndex) }
                     if (::typeSpinner.isInitialized) typeSpinner.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item, emptyList<String>())
@@ -1005,7 +1008,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
             .setPositiveButton(tr("إضافة")) { _, _ ->
                 val n=name.text.toString().trim(); val p=price.text.toString().replace(',','.').toDoubleOrNull(); val u=unit.text.toString().trim().ifBlank{"كغ"}; val m=method.text.toString().trim().ifBlank{"بيع"}; val co=company.text.toString().trim(); val cr=reference.text.toString().trim()
                 if(n.isBlank() || p==null || p<0 || cr.isBlank() || co.isBlank() || u.isBlank()) Toast.makeText(this,tr("أدخل اسم البند وسعراً صحيحاً"),Toast.LENGTH_LONG).show()
-                else { if(contractItems.any{it.name==n && it.contractReference==cr}) Toast.makeText(this,tr("هذا البند موجود مسبقاً في هذا العقد"),Toast.LENGTH_SHORT).show() else { contractItems.add(ContractItem(n,p,u,m,co,cr)); activeContractReference=cr; activeContractCompany=co; val refs=contractItems.map { it.contractReference }.distinct(); contractSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,refs); contractSpinner.setSelection(refs.indexOf(cr)); typeSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,types.map { tr(it) }); persistContracts(); cloud.markContractsDirty(); refreshContracts(); if(cloud.connected()) syncCloud(false); Toast.makeText(this,tr("تمت إضافة البند"),Toast.LENGTH_SHORT).show() } }
+                else { if(contractItems.any{it.name==n && it.contractReference==cr}) Toast.makeText(this,tr("هذا البند موجود مسبقاً في هذا العقد"),Toast.LENGTH_SHORT).show() else { contractItems.add(ContractItem(n,p,u,m,co,cr,activeContractEffectiveDate)); activeContractReference=cr; activeContractCompany=co; val refs=contractItems.map { it.contractReference }.distinct(); contractSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,refs); contractSpinner.setSelection(refs.indexOf(cr)); typeSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,types.map { tr(it) }); persistContracts(); cloud.markContractsDirty(); refreshContracts(); if(cloud.connected()) syncCloud(false); Toast.makeText(this,tr("تمت إضافة البند"),Toast.LENGTH_SHORT).show() } }
             }.show()
     }
     private fun showContractTerms() {
