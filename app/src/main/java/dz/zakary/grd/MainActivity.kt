@@ -240,6 +240,23 @@ class MainActivity : Activity() {
             "فشلت المزامنة: " to Pair("Échec de la synchronisation : ", "Sync failed: "),
             "حول التطبيق" to Pair("À propos", "About"),
             "العقد المعتمد لهذه العملية" to Pair("Contrat applicable à cette opération", "Contract applied to this sale"),
+            "العقد: " to Pair("Contrat : ", "Contract: "),
+            "سعر الوحدة: " to Pair("Prix unitaire : ", "Unit price: "),
+            "الكمية: " to Pair("Quantité : ", "Quantity: "),
+            "العملية: " to Pair("Opération : ", "Operation: "),
+            "الوجهة: " to Pair("Destination : ", "Destination: "),
+            "مداخيل البيع: " to Pair("Revenu de vente : ", "Sales revenue: "),
+            "وصل الخروج: " to Pair("Bon de sortie : ", "Dispatch note: "),
+            "الفاتورة: " to Pair("Facture : ", "Invoice: "),
+            "حالة الدفع: " to Pair("État du paiement : ", "Payment status: "),
+            "تاريخ الفاتورة: " to Pair("Date de facture : ", "Invoice date: "),
+            "تاريخ الدفع: " to Pair("Date de paiement : ", "Payment date: "),
+            "ملاحظات: " to Pair("Remarques : ", "Notes: "),
+            "حذف السجل" to Pair("Supprimer le registre", "Delete record"),
+            "هل تريد حذف عملية " to Pair("Voulez-vous supprimer l’opération ", "Delete transaction "),
+            " بتاريخ " to Pair(" du ", " dated "),
+            "تعديل " to Pair("Modifier ", "Edit "),
+            "السعر:" to Pair("Prix :", "Price:")
             "العربية" to Pair("Arabe", "Arabic"),
             "الشركة المشترية يجب أن تطابق الشركة المحددة في العقد." to Pair("L’acheteur doit correspondre à l’entreprise indiquée dans le contrat.", "Buyer must match the company specified in the contract."),
             "لا يمكن بيع هذا النوع دون بند بيع في العقد." to Pair("Ce type ne peut être vendu sans article de vente dans le contrat.", "This type cannot be sold without a sale item in the contract."),
@@ -492,6 +509,7 @@ class MainActivity : Activity() {
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
                 activeContractReference = contractSpinner.selectedItem?.toString() ?: activeContractReference
+                activeContractCompany = contractItems.firstOrNull { it.contractReference == activeContractReference }?.companyName ?: activeContractCompany
                 typeSpinner.adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item,
                     contractItems.filter { it.contractReference == activeContractReference }.map { tr(it.name) } + tr("نفايات صناعية أخرى (تُضاف لاحقاً)"))
                 updateIncomePreview()
@@ -742,7 +760,7 @@ class MainActivity : Activity() {
                 setTextColor(0xFF247A5A.toInt())
             }, matchWrap())
             card.addView(TextView(this).apply {
-                text = "الكمية: ${fmt(r.quantity)} ${contractItem(r.type)?.unit ?: "وحدة"}\nالعملية: ${r.operationType} | الشركة: ${r.buyerCompany.ifBlank { "—" }}\nالوجهة: ${r.destination}\nمداخيل البيع: ${fmt(r.income)} دج\nوصل الخروج: ${r.dispatchReference.ifBlank { "—" }} | الفاتورة: ${r.invoiceNumber.ifBlank { "—" }}\nحالة الدفع: ${r.paymentStatus} | تاريخ الفاتورة: ${r.invoiceDate.ifBlank { "—" }} | تاريخ الدفع: ${r.paymentDate.ifBlank { "—" }}" +
+                text = tr("الكمية: ") + fmt(r.quantity) + " " + r.saleUnit + "\n" + tr("العقد: ") + r.contractReference + "\n" + tr("سعر الوحدة: ") + fmt(r.unitPrice) + " دج / " + r.saleUnit + "\n" + tr("العملية: ") + tr(r.operationType) + " | " + tr("الشركة: ") + r.buyerCompany.ifBlank { "—" } + "\n" + tr("الوجهة: ") + tr(r.destination) + "\n" + tr("مداخيل البيع: ") + fmt(r.income) + " دج\n" + tr("وصل الخروج: ") + r.dispatchReference.ifBlank { "—" } + " | " + tr("الفاتورة: ") + r.invoiceNumber.ifBlank { "—" } + "\n" + tr("حالة الدفع: ") + tr(r.paymentStatus) + " | " + tr("تاريخ الفاتورة: ") + r.invoiceDate.ifBlank { "—" } + " | " + tr("تاريخ الدفع: ") + r.paymentDate.ifBlank { "—" } + if (r.note.isBlank()) "" else "\n" + tr("ملاحظات: ") + r.note
                     if (r.note.isBlank()) "" else "\nملاحظات: ${r.note}"
                 textSize = 14f
                 setTextColor(0xFF243746.toInt())
@@ -759,10 +777,10 @@ class MainActivity : Activity() {
     }
 
     private fun confirmDelete(r: WasteRecord) {
-        AlertDialog.Builder(this).setTitle("حذف السجل")
-            .setMessage("هل تريد حذف عملية ${r.type} بتاريخ ${r.date}؟")
-            .setNegativeButton("إلغاء", null)
-            .setPositiveButton("حذف") { _, _ ->
+        AlertDialog.Builder(this).setTitle(tr("حذف السجل"))
+.setMessage(tr("هل تريد حذف عملية ") + r.type + tr(" بتاريخ ") + r.date + "؟")
+.setNegativeButton(tr("إلغاء"), null)
+.setPositiveButton(tr("حذف")) { _, _ ->
                 records.removeAll { it.id == r.id }
                 cloud.markRecordDeleted(r.id)
                 persistRecords(); renderRecords(); refreshDashboard(); refreshFinance()
@@ -781,7 +799,7 @@ class MainActivity : Activity() {
         val paymentDate = EditText(this).apply { hint = "تاريخ الدفع YYYY-MM-DD"; setText(r.paymentDate) }
         listOf(q, income, dispatch, invoiceNo, invoiceDate, paymentStatus, paymentDate).forEach { panel.addView(it) }
         listOf(q, income).forEach { it.inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
-        AlertDialog.Builder(this).setTitle("تعديل ${r.type}").setView(panel)
+AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
             .setNegativeButton("إلغاء", null)
             .setPositiveButton("حفظ") { _, _ ->
                 val nq = q.text.toString().replace(',', '.').toDoubleOrNull()
@@ -814,7 +832,7 @@ class MainActivity : Activity() {
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), dp(12), dp(12), dp(12)); setBackgroundColor(0xFFFFFFFF.toInt()) }
         box.addView(TextView(this).apply { text="المداخيل حسب نوع النفايات"; textSize=18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()) }, matchWrap())
         sales.groupBy { it.type }.forEach { (type, rows) ->
-            val q=rows.sumOf { it.quantity }; val money=rows.sumOf { it.income }; val unit=contractItem(type)?.unit ?: "وحدة"
+val unit=rows.firstOrNull()?.saleUnit ?: "وحدة"
             box.addView(TextView(this).apply { text="$type\n${tr("الكمية المباعة: ")}${fmt(q)} $unit\n${tr("مداخيل البيع: ")}${fmt(money)} دج"; textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(7),0,dp(7)) },matchWrap())
         }
         dashboardStats.addView(box, matchWrap())
@@ -978,7 +996,7 @@ class MainActivity : Activity() {
     private fun showTypeSummary() {
         val lines = types.mapNotNull { type ->
             val subset = records.filter { it.type == type && it.operationType == "بيع مباشر" }
-            if (subset.isEmpty()) null else { val unit = contractItem(type)?.unit ?: "وحدة"; val income = subset.sumOf { it.income }; "$type: الكمية المباعة ${fmt(subset.sumOf { it.quantity })} $unit، السعر ${fmt(contractItem(type)?.price ?: 0.0)} دج/$unit، المداخيل ${fmt(income)} دج" }
+if (subset.isEmpty()) null else { val unit = subset.firstOrNull()?.saleUnit ?: "وحدة"; val income = subset.sumOf { it.income }; type + ": " + tr("الكمية المباعة: ") + fmt(subset.sumOf { it.quantity }) + " " + unit + "، " + tr("السعر: ") + fmt(subset.firstOrNull()?.unitPrice ?: 0.0) + " دج/" + unit + "، " + tr("مداخيل البيع: ") + fmt(income) + " دج" }
         }
         AlertDialog.Builder(this).setTitle("ملخص أنواع النفايات")
             .setMessage(if (lines.isEmpty()) "لا توجد بيانات بعد." else lines.joinToString("\n\n"))
