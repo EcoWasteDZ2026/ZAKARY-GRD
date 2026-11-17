@@ -95,7 +95,8 @@ class SupabaseClient(context: Context) {
                 .put("buyer_company", r.buyerCompany).put("operation_type", r.operationType)
                 .put("dispatch_reference", r.dispatchReference).put("invoice_number", r.invoiceNumber)
                 .put("invoice_date", r.invoiceDate.ifBlank { JSONObject.NULL }).put("payment_status", r.paymentStatus)
-                .put("payment_date", r.paymentDate.ifBlank { JSONObject.NULL }))
+                .put("payment_date", r.paymentDate.ifBlank { JSONObject.NULL })
+                .put("contract_reference", r.contractReference).put("unit_price", r.unitPrice).put("sale_unit", r.saleUnit))
         }
         if (recordPayload.length() > 0) call(base + "waste_records?on_conflict=id", "POST", recordPayload.toString(), true, "resolution=merge-duplicates,return=minimal")
 
@@ -108,9 +109,10 @@ class SupabaseClient(context: Context) {
         val contractPayload = JSONArray()
         localContracts.filter { dirtyContracts.contains(it.name) || dirtyContracts.contains("*") }.forEach { item ->
             contractPayload.put(JSONObject().put("user_id", uid).put("name", item.name).put("price", item.price)
-                .put("unit", item.unit).put("method", item.method).put("company_name", item.companyName.ifBlank { if (item.method == "بيع") "SNC Groupe EL BADISSIA" else "" }))
+                .put("unit", item.unit).put("method", item.method).put("company_name", item.companyName.ifBlank { if (item.method == "بيع") "SNC Groupe EL BADISSIA" else "" })
+                .put("contract_reference", item.contractReference))
         }
-        if (contractPayload.length() > 0) call(base + "contract_items?on_conflict=user_id%2Cname", "POST", contractPayload.toString(), true, "resolution=merge-duplicates,return=minimal")
+        if (contractPayload.length() > 0) call(base + "contract_items?on_conflict=user_id%2Ccontract_reference%2Cname", "POST", contractPayload.toString(), true, "resolution=merge-duplicates,return=minimal")
 
         val remoteRecords = JSONArray(call(base + "waste_records?select=*&order=event_date.desc", "GET", null))
         val merged = LinkedHashMap<String, WasteRecord>()
@@ -119,7 +121,7 @@ class SupabaseClient(context: Context) {
             val id = o.optString("id")
             merged[id] = WasteRecord(id, o.optString("event_date"), o.optString("waste_type"), o.optString("department"),
                 o.optDouble("quantity"), o.optDouble("recovered"), o.optString("destination"), o.optDouble("cost_dzd"),
-                o.optDouble("income_dzd"), o.optString("note"), o.optString("buyer_company"), o.optString("operation_type", "بيع مباشر"), o.optString("dispatch_reference"), o.optString("invoice_number"), o.optString("invoice_date"), o.optString("payment_status", "غير محدد"), o.optString("payment_date"))
+                o.optDouble("income_dzd"), o.optString("note"), o.optString("buyer_company"), o.optString("operation_type", "بيع مباشر"), o.optString("dispatch_reference"), o.optString("invoice_number"), o.optString("invoice_date"), o.optString("payment_status", "غير محدد"), o.optString("payment_date"), o.optString("contract_reference","NEW CONTRAT 2026"), o.optDouble("unit_price",0.0), o.optString("sale_unit","كغ"))
         }
         // Preserve records created locally while offline; dirty ones were uploaded above.
         localRecords.forEach { if (!merged.containsKey(it.id)) merged[it.id] = it }
@@ -127,7 +129,7 @@ class SupabaseClient(context: Context) {
         val mergedContracts = mutableListOf<ContractItem>()
         for (i in 0 until remoteContracts.length()) {
             val o = remoteContracts.getJSONObject(i)
-            mergedContracts.add(ContractItem(o.optString("name"), o.optDouble("price"), o.optString("unit", "كغ"), o.optString("method", "بيع"), o.optString("company_name")))
+            mergedContracts.add(ContractItem(o.optString("name"), o.optDouble("price"), o.optString("unit", "كغ"), o.optString("method", "بيع"), o.optString("company_name"), o.optString("contract_reference","NEW CONTRAT 2026")))
         }
         if (mergedContracts.isEmpty()) mergedContracts.addAll(localContracts)
 
