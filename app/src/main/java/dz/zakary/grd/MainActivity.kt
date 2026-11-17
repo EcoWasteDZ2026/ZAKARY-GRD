@@ -240,6 +240,8 @@ class MainActivity : Activity() {
             "فشلت المزامنة: " to Pair("Échec de la synchronisation : ", "Sync failed: "),
             "حول التطبيق" to Pair("À propos", "About"),
             "العقد المعتمد لهذه العملية" to Pair("Contrat applicable à cette opération", "Contract applied to this sale"),
+            "لا تغيّر سعر عقد موقع إلا بناءً على ملحق تعاقدي موقع. سيُحفظ سعر كل عملية بيع بتاريخها.\\n" to Pair("Ne modifiez le prix d’un contrat signé qu’au moyen d’un avenant signé. Le prix de chaque vente sera conservé à sa date.\\n", "Change a signed contract price only through a signed addendum. Each sale’s price will be preserved as of its transaction date.\\n"),
+            "حفظ السعر الجديد" to Pair("Enregistrer le nouveau prix", "Save new price"),
             "العقد: " to Pair("Contrat : ", "Contract: "),
             "سعر الوحدة: " to Pair("Prix unitaire : ", "Unit price: "),
             "الكمية: " to Pair("Quantité : ", "Quantity: "),
@@ -908,7 +910,7 @@ val unit=rows.firstOrNull()?.saleUnit ?: "وحدة"
     }
     private fun refreshContracts() {
         if (!::contractsPage.isInitialized) return
-        while (contractsPage.childCount > 5) contractsPage.removeViewAt(5)
+        while (contractsPage.childCount > 6) contractsPage.removeViewAt(6)
         contractItems.forEach { c ->
             val box = LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(12),dp(10),dp(12),dp(10)); setBackgroundColor(0xFFFFFFFF.toInt()) }
             box.addView(TextView(this).apply { text=c.name; textSize=16f; setTypeface(null,Typeface.BOLD); setTextColor(0xFF247A5A.toInt()) }, matchWrap())
@@ -962,9 +964,9 @@ val unit=rows.firstOrNull()?.saleUnit ?: "وحدة"
         val labels=editableItems.map { it.name + " — " + fmt(it.price) + " " + it.unit }.toTypedArray()
         AlertDialog.Builder(this).setTitle(tr("اختر بنداً لتعديل سعره")).setItems(labels) { _, which ->
             val c=editableItems[which]
-            val input=EditText(this).apply { hint="السعر بالدينار لكل ${c.unit}"; setText(c.price.toString()); inputType=android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
-            AlertDialog.Builder(this).setTitle(tr("تعديل السعر")).setMessage(c.name).setView(input)
-                .setNegativeButton(tr("إلغاء"),null).setPositiveButton(tr("حفظ")) { _, _ ->
+            val input=EditText(this).apply { hint=tr("السعر بالدينار لكل ") + c.unit; setText(c.price.toString()); inputType=android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
+            AlertDialog.Builder(this).setTitle(tr("تعديل السعر")).setMessage(tr("لا تغيّر سعر عقد موقع إلا بناءً على ملحق تعاقدي موقع. سيُحفظ سعر كل عملية بيع بتاريخها.\\n") + c.name).setView(input)
+.setNegativeButton(tr("إلغاء"),null).setPositiveButton(tr("حفظ السعر الجديد")) { _, _ ->
                     val v=input.text.toString().replace(',','.').toDoubleOrNull()
                     if(v==null || v<0) Toast.makeText(this,tr("سعر غير صحيح"),Toast.LENGTH_SHORT).show()
                     else { c.price=v; persistContracts(); cloud.markContractsDirty(); refreshContracts(); updateIncomePreview(); if(cloud.connected()) syncCloud(false); Toast.makeText(this,tr("تم تحديث السعر"),Toast.LENGTH_SHORT).show() }
