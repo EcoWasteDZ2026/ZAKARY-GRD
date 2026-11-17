@@ -144,7 +144,103 @@ class MainActivity : Activity() {
             "إعدادات المزامنة" to Pair("Paramètres de synchronisation", "Sync settings"),
             "حول التطبيق" to Pair("À propos de l’application", "About the app"),
             "إغلاق" to Pair("Fermer", "Close"),
-            "تم حفظ تفضيل اللغة على هذا الجهاز." to Pair("La préférence linguistique a été enregistrée sur cet appareil.", "Language preference saved on this device.")
+            "تم حفظ تفضيل اللغة على هذا الجهاز." to Pair("La préférence linguistique a été enregistrée sur cet appareil.", "Language preference saved on this device."),
+            "الشركة المشترية (للبيع فقط)" to Pair("Société acheteuse (vente uniquement)", "Buyer company (sales only)"),
+            "القسم" to Pair("Service", "Department"),
+            "الوجهة" to Pair("Destination", "Destination"),
+            "غير محدد" to Pair("Non défini", "Unspecified"),
+            "غير مفوتر" to Pair("Non facturé", "Not invoiced"),
+            "فاتورة صادرة - غير مدفوع" to Pair("Facture émise - non payée", "Invoice issued - unpaid"),
+            "مدفوع" to Pair("Payé", "Paid"),
+            "متأخر" to Pair("En retard", "Overdue"),
+            "الإنتاج" to Pair("Production", "Production"),
+            "المخازن" to Pair("Magasins", "Warehouses"),
+            "الصيانة" to Pair("Maintenance", "Maintenance"),
+            "المخبر" to Pair("Laboratoire", "Laboratory"),
+            "معالجة المياه" to Pair("Traitement des eaux", "Water treatment"),
+            "الإدارة" to Pair("Administration", "Administration"),
+            "أخرى" to Pair("Autre", "Other"),
+            "خروج إلى الشركة المشترية" to Pair("Sortie vers l’acheteur", "Dispatch to buyer"),
+            "الكمية: " to Pair("Quantité : ", "Quantity: "),
+            "العملية: " to Pair("Opération : ", "Operation: "),
+            "الشركة: " to Pair("Société : ", "Company: "),
+            "الوجهة: " to Pair("Destination : ", "Destination: "),
+            "مداخيل البيع: " to Pair("Revenu de vente : ", "Sales revenue: "),
+            "وصل الخروج: " to Pair("Bon de sortie : ", "Dispatch note: "),
+            "الفاتورة: " to Pair("Facture : ", "Invoice: "),
+            "حالة الدفع: " to Pair("État du paiement : ", "Payment status: "),
+            "تاريخ الفاتورة: " to Pair("Date de facture : ", "Invoice date: "),
+            "تاريخ الدفع: " to Pair("Date de paiement : ", "Payment date: "),
+            "ملاحظات: " to Pair("Remarques : ", "Notes: "),
+            "تعديل" to Pair("Modifier", "Edit"),
+            "حذف" to Pair("Supprimer", "Delete"),
+            "إلغاء" to Pair("Annuler", "Cancel"),
+            "حفظ" to Pair("Enregistrer", "Save"),
+            "إضافة" to Pair("Ajouter", "Add"),
+            "الكمية الإجمالية كغ" to Pair("Quantité totale (kg)", "Total quantity (kg)"),
+            "المداخيل دج (تحسب من العقد)" to Pair("Revenu DZD (calculé selon le contrat)", "Revenue DZD (calculated from contract)"),
+            "مرجع وصل الخروج" to Pair("Référence du bon de sortie", "Dispatch note reference"),
+            "حالة الدفع" to Pair("État du paiement", "Payment status"),
+            "حذف السجل" to Pair("Supprimer l’enregistrement", "Delete record"),
+            "هل تريد حذف عملية " to Pair("Voulez-vous supprimer l’opération ", "Delete the transaction "),
+            "قيم غير صحيحة؛ لم يتم حفظ التعديل." to Pair("Valeurs incorrectes ; modification non enregistrée.", "Invalid values; changes were not saved."),
+            "تم حفظ العملية بنجاح" to Pair("Opération enregistrée avec succès", "Transaction saved successfully"),
+            "لا توجد سجلات بعد. اضغط «تسجيل نفايات» لإضافة أول عملية." to Pair("Aucun enregistrement. Appuyez sur « Enregistrer un déchet » pour ajouter la première opération.", "No records yet. Tap “Record waste” to add the first transaction."),
+            "لا توجد نتائج مطابقة للبحث." to Pair("Aucun résultat correspondant.", "No matching results."),
+            "إجمالي الكميات المسجلة" to Pair("Quantités totales enregistrées", "Total recorded quantities"),
+            "إجمالي مداخيل البيع" to Pair("Revenu total des ventes", "Total sales revenue"),
+            "عدد عمليات البيع" to Pair("Nombre de ventes", "Number of sales"),
+            "المداخيل حسب نوع النفايات" to Pair("Revenus par type de déchet", "Revenue by waste type"),
+            "الكمية المباعة: " to Pair("Quantité vendue : ", "Quantity sold: "),
+            "مداخيل البيع: " to Pair("Revenu des ventes : ", "Sales revenue: "),
+            "＋ تسجيل عملية بيع" to Pair("＋ Enregistrer une vente", "＋ Record a sale"),
+            "تفصيل المداخيل حسب نوع النفاية" to Pair("Détail des revenus par type de déchet", "Revenue breakdown by waste type"),
+            "الشركة: غير محددة" to Pair("Société : non définie", "Company: unspecified"),
+            "هذا النوع غير مدرج للبيع في العقد" to Pair("Ce type n’est pas destiné à la vente selon le contrat", "This waste type is not listed for sale in the contract"),
+            "طريقة التعامل: " to Pair("Mode de traitement : ", "Handling method: "),
+            "السعر: " to Pair("Prix : ", "Price: "),
+            "ملاحظات العقد: الفوترة في نهاية الشهر، والدفع خلال 10 أيام من استلام الفاتورة. أوقات الجمع المذكورة: الأحد إلى الخميس، 08:00–16:00. مدة العقد سنة قابلة للتجديد باتفاق الطرفين وملحق. لا تعتمد هذه الملخصات بدل العقد الأصلي الموقع." to Pair("Notes du contrat : facturation en fin de mois, paiement sous 10 jours après réception de la facture. Collecte du dimanche au jeudi, 08:00–16:00. Durée d’un an, renouvelable par accord et avenant. Ce résumé ne remplace pas le contrat original signé.", "Contract notes: invoicing at month-end, payment within 10 days of invoice receipt. Collection Sunday to Thursday, 08:00–16:00. One-year term, renewable by agreement and amendment. This summary does not replace the signed original contract."),
+            "اختر بنداً لتعديل سعره" to Pair("Choisir un article pour modifier son prix", "Choose an item to edit its price"),
+            "السعر بالدينار لكل " to Pair("Prix en DZD par ", "Price in DZD per "),
+            "تعديل السعر" to Pair("Modifier le prix", "Edit price"),
+            "سعر غير صحيح" to Pair("Prix incorrect", "Invalid price"),
+            "تم تحديث السعر" to Pair("Prix mis à jour", "Price updated"),
+            "اسم نوع النفاية / البند" to Pair("Nom du déchet / article", "Waste type / item name"),
+            "السعر بالدينار (0 للإزالة المجانية)" to Pair("Prix en DZD (0 pour enlèvement gratuit)", "Price in DZD (0 for free removal)"),
+            "الوحدة: كغ أو وحدة" to Pair("Unité : kg ou unité", "Unit: kg or unit"),
+            "طريقة التعامل: بيع / إزالة مجانية" to Pair("Mode : vente / enlèvement gratuit", "Method: sale / free removal"),
+            "الشركة المتعاقدة / المشترية" to Pair("Entreprise contractante / acheteur", "Contracted / buyer company"),
+            "إضافة بند تعاقدي جديد" to Pair("Ajouter un nouvel article au contrat", "Add a new contract item"),
+            "أدخل اسم البند وسعراً صحيحاً" to Pair("Saisissez le nom de l’article et un prix valide", "Enter an item name and a valid price"),
+            "هذا البند موجود مسبقاً" to Pair("Cet article existe déjà", "This item already exists"),
+            "تمت إضافة البند" to Pair("Article ajouté", "Item added"),
+            "بيانات عقد هنكل" to Pair("Données du contrat Henkel", "Henkel contract details"),
+            "ملخص أنواع النفايات" to Pair("Résumé des types de déchets", "Waste type summary"),
+            "لا توجد بيانات بعد." to Pair("Aucune donnée pour le moment.", "No data yet."),
+            "حفظ أو مشاركة النسخة الاحتياطية" to Pair("Enregistrer ou partager la sauvegarde", "Save or share backup"),
+            "استيراد نسخة احتياطية" to Pair("Importer une sauvegarde", "Import backup"),
+            "الصق محتوى JSON للنسخة الاحتياطية" to Pair("Collez le contenu JSON de la sauvegarde", "Paste backup JSON content"),
+            "تم استيراد " to Pair("Importé : ", "Imported "),
+            " سجل" to Pair(" enregistrement(s)", " record(s)"),
+            "تعذر قراءة النسخة. تأكد من نسخ JSON كاملًا." to Pair("Lecture impossible. Vérifiez que le JSON complet a été copié.", "Could not read backup. Make sure the full JSON was copied."),
+            "رابط Supabase: https://xxxx.supabase.co" to Pair("URL Supabase : https://xxxx.supabase.co", "Supabase URL: https://xxxx.supabase.co"),
+            "المفتاح العام Publishable / anon" to Pair("Clé publique Publishable / anon", "Public Publishable / anon key"),
+            "البريد الإلكتروني لحساب المزامنة" to Pair("E-mail du compte de synchronisation", "Sync account email"),
+            "كلمة مرور حساب Supabase" to Pair("Mot de passe du compte Supabase", "Supabase account password"),
+            "ربط الهاتف بقاعدة هنكل المشتركة" to Pair("Connecter le téléphone à la base Henkel partagée", "Connect phone to shared Henkel database"),
+            "اتصال ومزامنة" to Pair("Connecter et synchroniser", "Connect & sync"),
+            "أكمل الرابط والمفتاح العام والبريد وكلمة المرور." to Pair("Complétez l’URL, la clé publique, l’e-mail et le mot de passe.", "Complete the URL, public key, email and password."),
+            "جارٍ الاتصال الآمن..." to Pair("Connexion sécurisée...", "Connecting securely..."),
+            "تم ربط الهاتف ومزامنة البيانات بنجاح." to Pair("Téléphone connecté et données synchronisées.", "Phone connected and data synced successfully."),
+            "تعذر الاتصال: " to Pair("Connexion impossible : ", "Connection failed: "),
+            "تمت المزامنة بين الهاتف والحاسوب." to Pair("Synchronisation entre téléphone et ordinateur terminée.", "Phone and computer sync completed."),
+            "فشلت المزامنة: " to Pair("Échec de la synchronisation : ", "Sync failed: "),
+            "حول التطبيق" to Pair("À propos", "About"),
+            "العربية" to Pair("Arabe", "Arabic"),
+            "الشركة المشترية يجب أن تطابق الشركة المحددة في العقد." to Pair("L’acheteur doit correspondre à l’entreprise indiquée dans le contrat.", "Buyer must match the company specified in the contract."),
+            "لا يمكن بيع هذا النوع دون بند بيع في العقد." to Pair("Ce type ne peut être vendu sans article de vente dans le contrat.", "This type cannot be sold without a sale item in the contract."),
+            "تحقق من التاريخ والكمية." to Pair("Vérifiez la date et la quantité.", "Check the date and quantity."),
+            "أدخل كمية صحيحة أكبر من صفر." to Pair("Saisissez une quantité valide supérieure à zéro.", "Enter a valid quantity greater than zero.")
         )
         val pair = translations[value] ?: return value
         return if (appLanguage == "fr") pair.first else pair.second
@@ -318,7 +414,7 @@ class MainActivity : Activity() {
     private fun newPage(title: String): LinearLayout {
         val page = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            layoutDirection = if (appLanguage == "ar") View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
             setPadding(dp(2), dp(12), dp(2), dp(12))
             visibility = View.GONE
         }
@@ -327,7 +423,7 @@ class MainActivity : Activity() {
             textSize = 23f
             setTypeface(null, Typeface.BOLD)
             setTextColor(0xFF173650.toInt())
-            gravity = Gravity.RIGHT
+            gravity = if (appLanguage == "ar") Gravity.RIGHT else Gravity.LEFT
             setPadding(dp(2), dp(8), dp(2), dp(14))
         }, matchWrap())
         contentHost.addView(page, matchWrap())
@@ -372,7 +468,7 @@ class MainActivity : Activity() {
     private fun spinner(parent: LinearLayout, items: List<String>): Spinner {
         val s = Spinner(this).apply {
             adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, items)
-            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            layoutDirection = if (appLanguage == "ar") View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
             setBackgroundColor(0xFFFFFFFF.toInt())
         }
         val p = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(48))
@@ -463,7 +559,7 @@ class MainActivity : Activity() {
         }
         if (filtered.isEmpty()) {
             recordList.addView(TextView(this).apply {
-                text = if (records.isEmpty()) "لا توجد سجلات بعد. اضغط «تسجيل نفايات» لإضافة أول عملية." else "لا توجد نتائج مطابقة للبحث."
+                text = if (records.isEmpty()) tr("لا توجد سجلات بعد. اضغط «تسجيل نفايات» لإضافة أول عملية.") else tr("لا توجد نتائج مطابقة للبحث.")
                 textSize = 15f
                 setTextColor(0xFF657681.toInt())
                 setPadding(dp(10), dp(16), dp(10), dp(16))
@@ -547,14 +643,14 @@ class MainActivity : Activity() {
         val unitGroups = sales.groupBy { contractItem(it.type)?.unit ?: "وحدة" }
         val total = unitGroups.entries.joinToString(" + ") { (unit, rows) -> "${fmt(rows.sumOf { it.quantity })} $unit" }.ifBlank { "0" }
         val income = sales.sumOf { it.income }
-        dashboardStats.addView(metric("إجمالي الكميات المسجلة", total), matchWrap())
-        dashboardStats.addView(metric("إجمالي مداخيل البيع", "${fmt(income)} دج"), matchWrap())
-        dashboardStats.addView(metric("عدد عمليات البيع", sales.size.toString()), matchWrap())
+        dashboardStats.addView(metric(tr("إجمالي الكميات المسجلة"), total), matchWrap())
+        dashboardStats.addView(metric(tr("إجمالي مداخيل البيع"), "${fmt(income)} دج"), matchWrap())
+        dashboardStats.addView(metric(tr("عدد عمليات البيع"), sales.size.toString()), matchWrap())
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), dp(12), dp(12), dp(12)); setBackgroundColor(0xFFFFFFFF.toInt()) }
         box.addView(TextView(this).apply { text="المداخيل حسب نوع النفايات"; textSize=18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()) }, matchWrap())
         sales.groupBy { it.type }.forEach { (type, rows) ->
             val q=rows.sumOf { it.quantity }; val money=rows.sumOf { it.income }; val unit=contractItem(type)?.unit ?: "وحدة"
-            box.addView(TextView(this).apply { text="$type\nالكمية المباعة: ${fmt(q)} $unit\nمداخيل البيع: ${fmt(money)} دج"; textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(7),0,dp(7)) },matchWrap())
+            box.addView(TextView(this).apply { text="$type\n${tr("الكمية المباعة: ")}${fmt(q)} $unit\n${tr("مداخيل البيع: ")}${fmt(money)} دج"; textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(7),0,dp(7)) },matchWrap())
         }
         dashboardStats.addView(box, matchWrap())
     }
@@ -603,12 +699,12 @@ class MainActivity : Activity() {
         if (!::financePage.isInitialized) return
         while (financePage.childCount > 1) financePage.removeViewAt(1)
         val sales = records.filter { it.operationType == "بيع مباشر" }
-        financePage.addView(metric("إجمالي مداخيل البيع", "${fmt(sales.sumOf { it.income })} دج"), matchWrap())
+        financePage.addView(metric(tr("إجمالي مداخيل البيع"), "${fmt(sales.sumOf { it.income })} دج"), matchWrap())
         financePage.addView(actionButton("＋ تسجيل عملية بيع") { showPage("form") }, matchWrap())
-        financePage.addView(TextView(this).apply { text="تفصيل المداخيل حسب نوع النفاية"; textSize=19f; setTypeface(null,Typeface.BOLD); setTextColor(0xFF173650.toInt()); setPadding(0,dp(14),0,dp(8)) },matchWrap())
+        financePage.addView(TextView(this).apply { text=tr("تفصيل المداخيل حسب نوع النفاية"); textSize=19f; setTypeface(null,Typeface.BOLD); setTextColor(0xFF173650.toInt()); setPadding(0,dp(14),0,dp(8)) },matchWrap())
         sales.groupBy { it.type }.forEach { (type, rows) ->
             val q=rows.sumOf { it.quantity }; val income=rows.sumOf { it.income }; val unit=contractItem(type)?.unit ?: "وحدة"
-            financePage.addView(metric(type, "الكمية المباعة: ${fmt(q)} $unit\nالمداخيل: ${fmt(income)} دج"), matchWrap())
+            financePage.addView(metric(type, "${tr("الكمية المباعة: ")}${fmt(q)} $unit\n${tr("مداخيل البيع: ")}${fmt(income)} دج"), matchWrap())
         }
     }
 
@@ -631,7 +727,7 @@ class MainActivity : Activity() {
         contractItems.forEach { c ->
             val box = LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(12),dp(10),dp(12),dp(10)); setBackgroundColor(0xFFFFFFFF.toInt()) }
             box.addView(TextView(this).apply { text=c.name; textSize=16f; setTypeface(null,Typeface.BOLD); setTextColor(0xFF247A5A.toInt()) }, matchWrap())
-            box.addView(TextView(this).apply { text="الشركة: ${c.companyName.ifBlank { "غير محددة" }}\n"+(if(c.method=="غير قابل للبيع") "هذا النوع غير مدرج للبيع في العقد" else "السعر: ${fmt(c.price)} دج / ${c.unit}  •  طريقة التعامل: ${c.method}"); textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(5),0,0) }, matchWrap())
+            box.addView(TextView(this).apply { text="${tr("الشركة: ")}${c.companyName.ifBlank { tr("غير محددة") }}\n"+(if(c.method=="غير قابل للبيع") tr("هذا النوع غير مدرج للبيع في العقد") else "${tr("السعر: ")}${fmt(c.price)} دج / ${c.unit}  •  ${tr("طريقة التعامل: ")}${tr(c.method)}"); textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(5),0,0) }, matchWrap())
             val p=LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); p.bottomMargin=dp(8); contractsPage.addView(box,p)
         }
         contractsPage.addView(TextView(this).apply { text="ملاحظات العقد: الفوترة في نهاية الشهر، والدفع خلال 10 أيام من استلام الفاتورة. أوقات الجمع المذكورة: الأحد إلى الخميس، 08:00–16:00. مدة العقد سنة قابلة للتجديد باتفاق الطرفين وملحق. لا تعتمد هذه الملخصات بدل العقد الأصلي الموقع."; textSize=13f; setTextColor(0xFF795500.toInt()); setPadding(dp(12),dp(12),dp(12),dp(12)); setBackgroundColor(0xFFFFF2CC.toInt()) }, matchWrap())
