@@ -880,7 +880,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
                     val historicalUnitPrice = r.unitPrice.takeIf { it > 0.0 } ?: if (r.quantity > 0.0) r.income / r.quantity else 0.0
                     val ni = if (r.operationType == "بيع مباشر") nq * historicalUnitPrice else 0.0
                     val index = records.indexOfFirst { it.id == r.id }
-                    if (index >= 0) records[index] = r.copy(quantity=nq, income=ni, dispatchReference=dispatch.text.toString().trim(), invoiceNumber=invoiceNo.text.toString().trim(), invoiceDate=invoiceDate.text.toString().trim(), paymentStatus=paymentStatus.text.toString().trim().ifBlank { "غير محدد" }, paymentDate=paymentDate.text.toString().trim())
+                    if (index >= 0) records[index] = r.copy(quantity=nq, income=ni, dispatchReference=dispatch.text.toString().trim(), invoiceNumber=invoiceNo.text.toString().trim(), invoiceDate=invoiceDate.text.toString().trim(), paymentStatus=untr(paymentStatus.text.toString().trim()).ifBlank { "غير محدد" }, paymentDate=paymentDate.text.toString().trim())
                     cloud.markRecordDirty(r.id)
                     persistRecords(); renderRecords(); refreshDashboard(); refreshFinance()
                     if (cloud.connected()) syncCloud(false)
@@ -1243,7 +1243,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
             }
         }
         val send = Intent(Intent.ACTION_SEND).apply { type="text/csv"; putExtra(Intent.EXTRA_SUBJECT,"ZAKARY GRD - Rapport"); putExtra(Intent.EXTRA_TEXT,csv) }
-        startActivity(Intent.createChooser(send, "تصدير أو مشاركة التقرير"))
+        startActivity(Intent.createChooser(send, tr("تصدير أو مشاركة التقرير")))
     }
 
     private fun number(e: EditText, default: Double? = null): Double? {
