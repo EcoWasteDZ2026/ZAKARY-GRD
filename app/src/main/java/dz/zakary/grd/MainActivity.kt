@@ -178,7 +178,7 @@ class MainActivity : Activity() {
         quantityInput = field(formPage, "الكمية الإجمالية بالكيلوغرام", true)
         destinationSpinner = spinner(formPage, destinations)
         incomeInput = field(formPage, "مداخيل البيع (تحسب آلياً من العقد)", true)
-        operationSpinner = spinner(formPage, listOf("توليد/تسجيل الكمية المتولدة", "بيع مباشر"))
+        operationSpinner = spinner(formPage, listOf("بيع مباشر"))
         buyerInput = field(formPage, "الشركة المشترية (للبيع فقط)")
         typeSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
@@ -186,7 +186,7 @@ class MainActivity : Activity() {
                 val item = contractItem(typeSpinner.selectedItem?.toString() ?: "")
                 if (item != null) {
                     buyerInput.setText(if (item.method == "بيع") item.companyName else "")
-                    operationSpinner.setSelection(if (item.method == "بيع") 1 else 0)
+                    operationSpinner.setSelection(0)
                     updateIncomePreview()
                 }
             }
@@ -316,7 +316,7 @@ class MainActivity : Activity() {
         val recovered = 0.0
         val cost = 0.0
         val selectedType = typeSpinner.selectedItem.toString()
-        val operation = operationSpinner.selectedItem.toString()
+        val operation = "بيع مباشر"
         val item = contractItem(selectedType)
         val buyer = buyerInput.text.toString().trim()
         val income = if (operation == "بيع مباشر") {
@@ -350,7 +350,7 @@ class MainActivity : Activity() {
         if (!::incomeInput.isInitialized || !::typeSpinner.isInitialized || !::quantityInput.isInitialized) return
         val item = contractItem(typeSpinner.selectedItem?.toString() ?: "")
         val q = number(quantityInput, 0.0) ?: 0.0
-        val sale = ::operationSpinner.isInitialized && operationSpinner.selectedItem?.toString() == "بيع مباشر"
+        val sale = true
         incomeInput.setText(if (sale && item?.method == "بيع") fmt(q * item.price) else "0")
         if (sale && item != null && item.method == "بيع" && ::buyerInput.isInitialized && buyerInput.text.isNullOrBlank()) buyerInput.setText(item.companyName)
     }
@@ -591,7 +591,7 @@ class MainActivity : Activity() {
     private fun showTypeSummary() {
         val lines = types.mapNotNull { type ->
             val subset = records.filter { it.type == type }
-            if (subset.isEmpty()) null else "$type: إجمالي ${fmt(subset.sumOf { it.quantity })} كغ، مسترجع ${fmt(subset.sumOf { it.recovered })} كغ"
+            if (subset.isEmpty()) null else { val unit = contractItem(type)?.unit ?: "وحدة"; val income = subset.sumOf { it.income }; "$type: الكمية المباعة ${fmt(subset.sumOf { it.quantity })} $unit، السعر ${fmt(contractItem(type)?.price ?: 0.0)} دج/$unit، المداخيل ${fmt(income)} دج" }
         }
         AlertDialog.Builder(this).setTitle("ملخص أنواع النفايات")
             .setMessage(if (lines.isEmpty()) "لا توجد بيانات بعد." else lines.joinToString("\n\n"))
@@ -733,9 +733,9 @@ class MainActivity : Activity() {
 
     private fun shareCsv() {
         val csv = buildString {
-            append("Date,Type,Department,Quantity_kg,Recovered_kg,Destination,Cost_DZD,Income_DZD,Notes\n")
+            append("Date,Type,Department,Quantity,Unit,Unit_Price_DZD,Buyer,Quantity_Sold,Sales_Income_DZD,Dispatch_Reference,Invoice,Payment_Status,Notes\n")
             records.forEach { r ->
-                append(listOf(r.date,r.type,r.department,fmt(r.quantity),fmt(r.recovered),r.destination,fmt(r.cost),fmt(r.income),r.note)
+                append(listOf(r.date,r.type,r.department,fmt(r.quantity),contractItem(r.type)?.unit ?: "وحدة",fmt(contractItem(r.type)?.price ?: 0.0),r.buyerCompany,fmt(r.quantity),fmt(r.income),r.dispatchReference,r.invoiceNumber,r.paymentStatus,r.note)
                     .joinToString(",") { "\"" + it.replace("\"", "\"\"") + "\"" })
                 append("\n")
             }
