@@ -240,6 +240,7 @@ class MainActivity : Activity() {
             "فشلت المزامنة: " to Pair("Échec de la synchronisation : ", "Sync failed: "),
             "حول التطبيق" to Pair("À propos", "About"),
             "العقد المعتمد لهذه العملية" to Pair("Contrat applicable à cette opération", "Contract applied to this sale"),
+            "الكمية بعدد الوحدات" to Pair("Quantité en unités", "Quantity in units"),
             "تم حفظ تفضيل اللغة على هذا الجهاز." to Pair("Préférence linguistique enregistrée sur cet appareil.", "Language preference saved on this device."),
             "المداخيل حسب نوع النفايات" to Pair("Revenus par type de déchet", "Revenue by waste type"),
             "ملاحظات العقد: الفوترة في نهاية الشهر، والدفع خلال 10 أيام من استلام الفاتورة. أوقات الجمع المذكورة: الأحد إلى الخميس، 08:00–16:00. مدة العقد سنة قابلة للتجديد باتفاق الطرفين وملحق. لا تعتمد هذه الملخصات بدل العقد الأصلي الموقع." to Pair("Notes du contrat : facturation en fin de mois, paiement sous 10 jours après réception. Collecte du dimanche au jeudi, 08:00–16:00. Durée d’un an, renouvelable par accord et avenant. Le contrat signé reste la référence.", "Contract notes: month-end invoicing, payment within 10 days of receipt. Collection Sunday–Thursday, 08:00–16:00. One-year term, renewable by agreement and addendum. The signed contract remains authoritative."),
@@ -526,6 +527,7 @@ class MainActivity : Activity() {
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val item = contractItem(untr(typeSpinner.selectedItem?.toString() ?: ""))
+                quantityInput.hint = if (item?.unit == "كغ") tr("الكمية الإجمالية بالكيلوغرام") else tr("الكمية بعدد الوحدات")
                 if (item != null) {
                     buyerInput.setText(if (item.method == "بيع") item.companyName else "")
                     operationSpinner.setSelection(0)
@@ -676,6 +678,14 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun isValidIsoDate(value: String): Boolean {
+        return try {
+            val parser = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).apply { isLenient = false }
+            val parsed = parser.parse(value) ?: return false
+            SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(parsed) == value
+        } catch (_: Exception) { false }
+    }
+
     private fun saveRecord() {
         val date = dateInput.text.toString().trim()
         val quantity = number(quantityInput)
@@ -694,7 +704,7 @@ class MainActivity : Activity() {
             return
         }
         val income = (quantity ?: 0.0) * item.price
-        if (date.isBlank() || quantity == null || quantity <= 0) {
+        if (!isValidIsoDate(date) || quantity == null || quantity <= 0) {
             Toast.makeText(this, "تحقق من التاريخ والكمية.", Toast.LENGTH_LONG).show()
             return
         }
@@ -1003,13 +1013,16 @@ val unit=rows.firstOrNull()?.saleUnit ?: "وحدة"
     }
 
     private fun showTypeSummary() {
-        val lines = types.mapNotNull { type ->
-            val subset = records.filter { it.type == type && it.operationType == "بيع مباشر" }
-if (subset.isEmpty()) null else { val unit = subset.firstOrNull()?.saleUnit ?: "وحدة"; val income = subset.sumOf { it.income }; type + ": " + tr("الكمية المباعة: ") + fmt(subset.sumOf { it.quantity }) + " " + unit + "، " + tr("السعر: ") + fmt(subset.firstOrNull()?.unitPrice ?: 0.0) + " دج/" + unit + "، " + tr("مداخيل البيع: ") + fmt(income) + " دج" }
-        }
-        AlertDialog.Builder(this).setTitle("ملخص أنواع النفايات")
-            .setMessage(if (lines.isEmpty()) "لا توجد بيانات بعد." else lines.joinToString("\n\n"))
-            .setPositiveButton("إغلاق", null).show()
+        val lines = records.filter { it.operationType == "بيع مباشر" }
+            .groupBy { Triple(it.type, it.contractReference, it.unitPrice) }
+            .map { (key, subset) ->
+                val (type, contractRef, unitPrice) = key
+                val unit = subset.first().saleUnit
+                type + " — " + contractRef + ": " + tr("الكمية المباعة: ") + fmt(subset.sumOf { it.quantity }) + " " + unit + "، " + tr("السعر: ") + fmt(unitPrice) + " دج/" + unit + "، " + tr("مداخيل البيع: ") + fmt(subset.sumOf { it.income }) + " دج"
+            }
+        AlertDialog.Builder(this).setTitle(tr("ملخص أنواع النفايات"))
+            .setMessage(if (lines.isEmpty()) tr("لا توجد بيانات بعد.") else lines.joinToString("\n\n"))
+            .setPositiveButton(tr("إغلاق"), null).show()
     }
 
     private fun backupData() {
