@@ -367,6 +367,15 @@ class MainActivity : Activity() {
             "هذا البند موجود مسبقاً في هذا العقد" to Pair("Cet article existe déjà dans ce contrat", "This item already exists in this contract"),
             "لا توجد بنود في العقد النشط." to Pair("Aucun article dans le contrat actif.", "No items in the active contract."),
             "مرجع الملحق / النسخة الجديدة" to Pair("Référence de l’avenant / nouvelle version", "Addendum reference / new version"),
+            "نظام متابعة بيع النفايات الصناعية وإدارة العقود والتقارير." to Pair("Système de suivi des ventes de déchets industriels, des contrats et des rapports.", "Industrial waste sales, contract and reporting system."),
+            "استيراد" to Pair("Importer", "Import"),
+            "إغلاق" to Pair("Fermer", "Close"),
+            "حفظ" to Pair("Enregistrer", "Save"),
+            "إلغاء" to Pair("Annuler", "Cancel"),
+            "خطأ غير معروف" to Pair("Erreur inconnue", "Unknown error"),
+            "تحقق من الإنترنت وإعداد Supabase" to Pair("Vérifiez Internet et la configuration Supabase", "Check your internet connection and Supabase settings"),
+            "فشلت المزامنة: " to Pair("Échec de la synchronisation : ", "Sync failed: "),
+            "تعذر الاتصال: " to Pair("Connexion impossible : ", "Connection failed: "),
             "تم حفظ العملية بنجاح" to Pair("Opération enregistrée avec succès", "Transaction saved successfully"),
             "مرجع وصل الخروج" to Pair("Référence du bon de sortie", "Dispatch note reference"),
             "رقم الفاتورة" to Pair("Numéro de facture", "Invoice number"),
@@ -634,7 +643,7 @@ class MainActivity : Activity() {
         settingsPage.addView(TextView(this).apply { text = tr("إعدادات إضافية"); textSize = 18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()); setPadding(0, dp(18), 0, dp(8)) }, matchWrap())
         settingsPage.addView(actionButton("النسخ الاحتياطي واسترجاع البيانات") { backupData() }, matchWrap())
         settingsPage.addView(actionButton("إعدادات المزامنة") { showCloudDialog() }, matchWrap())
-        settingsPage.addView(actionButton("حول التطبيق") { AlertDialog.Builder(this).setTitle("HENKEL ALGÉRIE – ZAKARY GRD").setMessage("نظام متابعة بيع النفايات الصناعية وإدارة العقود والتقارير.").setPositiveButton("إغلاق", null).show() }, matchWrap())
+        settingsPage.addView(actionButton("حول التطبيق") { AlertDialog.Builder(this).setTitle("HENKEL ALGÉRIE – ZAKARY GRD").setMessage(tr("نظام متابعة بيع النفايات الصناعية وإدارة العقود والتقارير.")).setPositiveButton(tr("إغلاق"), null).show() }, matchWrap())
         pages["settings"] = settingsPage
 
         refreshDashboard()
@@ -860,8 +869,8 @@ class MainActivity : Activity() {
         listOf(q, income, dispatch, invoiceNo, invoiceDate, paymentStatus, paymentDate).forEach { panel.addView(it) }
         listOf(q, income).forEach { it.inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
 AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
-            .setNegativeButton("إلغاء", null)
-            .setPositiveButton("حفظ") { _, _ ->
+            .setNegativeButton(tr("إلغاء"), null)
+            .setPositiveButton(tr("حفظ")) { _, _ ->
                 val nq = q.text.toString().replace(',', '.').toDoubleOrNull()
                 val niInput = income.text.toString().replace(',', '.').toDoubleOrNull()
                 if (nq == null || niInput == null || nq <= 0 || niInput < 0) {
@@ -1075,7 +1084,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
     private fun showContractTerms() {
         AlertDialog.Builder(this).setTitle(tr("بيانات عقد هنكل"))
             .setMessage(tr("الطرف: HENKEL ALGÉRIE SPA\nالمشتري: SNC GROUPE EL BADISSIA\nمرجع الوثيقة: NEW CONTRAT 2026\nتاريخ السريان: 08-08-2026\nتاريخ التحرير: 29-09-2026\nالمدة: 12 شهراً، والتجديد بملحق موقع من الطرفين\nالفوترة: نهاية كل شهر\nالدفع: خلال 10 أيام من استلام الفاتورة\nالجمع: الأحد إلى الخميس، 08:00–16:00\nتقرير مفصل كل ثلاثة أشهر\nالأسعار شاملة الرسوم وثابتة طوال مدة العقد\nلا يجوز بيع النفايات داخل موقع هنكل، ولا الاستعانة بمشترٍ آخر دون موافقة كتابية مسبقة\n\nالأسعار والأنواع هي بنود العقد المرفق، وتظل قابلة للتعديل فقط بملحق تعاقدي موقع."))
-            .setPositiveButton("إغلاق",null).show()
+            .setPositiveButton(tr("إغلاق"),null).show()
     }
 
     private fun showTypeSummary() {
@@ -1104,8 +1113,8 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
         val input = EditText(this).apply { hint=tr("الصق محتوى JSON للنسخة الاحتياطية"); minLines=5; gravity=Gravity.TOP or if (appLanguage == "ar") Gravity.RIGHT else Gravity.LEFT }
         AlertDialog.Builder(this).setTitle(tr("استيراد نسخة احتياطية"))
             .setMessage(tr("انسخ محتوى النسخة الاحتياطية والصقه هنا. ستتم إضافة السجلات الجديدة دون تكرار المعرفات."))
-            .setView(input).setNegativeButton("إلغاء", null)
-            .setPositiveButton("استيراد") { _, _ ->
+            .setView(input).setNegativeButton(tr("إلغاء"), null)
+            .setPositiveButton(tr("استيراد")) { _, _ ->
                 try {
                     val a = JSONArray(input.text.toString().trim())
                     var added = 0
@@ -1165,7 +1174,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
         AlertDialog.Builder(this).setTitle(tr("ربط الهاتف بقاعدة هنكل المشتركة"))
             .setMessage(tr("أدخل رابط المشروع والمفتاح العام فقط، ثم سجّل الدخول بالحساب نفسه المستعمل على الحاسوب. لا تدخل مفتاح service_role."))
             .setView(panel).setNegativeButton(tr("إلغاء"), null)
-            .setPositiveButton("اتصال ومزامنة", null).create().also { dialog ->
+            .setPositiveButton(tr("اتصال ومزامنة"), null).create().also { dialog ->
                 dialog.setOnShowListener {
                     dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                         val u = project.text.toString().trim()
@@ -1192,7 +1201,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
                                     Toast.makeText(this, tr("تم ربط الهاتف ومزامنة البيانات بنجاح."), Toast.LENGTH_LONG).show()
                                 }
                             } catch (ex: Exception) {
-                                runOnUiThread { Toast.makeText(this, "تعذر الاتصال: " + (ex.message ?: "خطأ غير معروف"), Toast.LENGTH_LONG).show() }
+                                runOnUiThread { Toast.makeText(this, tr("تعذر الاتصال: ") + (ex.message ?: tr("خطأ غير معروف")), Toast.LENGTH_LONG).show() }
                             }
                         }.start()
                     }
@@ -1216,10 +1225,10 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
                     persistRecords(); persistContracts()
                     if (::typeSpinner.isInitialized) typeSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, types)
                     renderRecords(); refreshDashboard(); refreshFinance(); refreshContracts()
-                    if (showMessage) Toast.makeText(this, "تمت المزامنة بين الهاتف والحاسوب.", Toast.LENGTH_LONG).show()
+                    if (showMessage) Toast.makeText(this, tr("تمت المزامنة بين الهاتف والحاسوب."), Toast.LENGTH_LONG).show()
                 }
             } catch (ex: Exception) {
-                if (showMessage) runOnUiThread { Toast.makeText(this, "فشلت المزامنة: " + (ex.message ?: "تحقق من الإنترنت وإعداد Supabase"), Toast.LENGTH_LONG).show() }
+                if (showMessage) runOnUiThread { Toast.makeText(this, tr("فشلت المزامنة: ") + (ex.message ?: tr("تحقق من الإنترنت وإعداد Supabase")), Toast.LENGTH_LONG).show() }
             }
         }.start()
     }
