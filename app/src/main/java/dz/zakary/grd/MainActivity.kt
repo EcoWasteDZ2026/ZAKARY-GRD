@@ -23,7 +23,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
-data class ContractItem(val name: String, var price: Double, var unit: String, var method: String, var companyName: String = "")
+data class ContractItem(val name: String, var price: Double, var unit: String, var method: String, var companyName: String = "", var contractReference: String = "NEW CONTRAT 2026")
 
 data class WasteRecord(
     val id: String, val date: String, val type: String, val department: String,
@@ -37,6 +37,8 @@ class MainActivity : Activity() {
     private val records = mutableListOf<WasteRecord>()
     private val productionByMonth = mutableMapOf<String, Double>()
     private lateinit var productionInput: EditText
+    private var activeContractReference = "NEW CONTRAT 2026"
+    private var activeContractCompany = "SNC Groupe EL BADISSIA"
     private val contractItems = mutableListOf(
         ContractItem("صناديق كرتونية ونفايات الورق", 2.40, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
         ContractItem("الأغلفة البلاستيكية (المطاطية وأغلفة التغليف)", 5.40, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
@@ -319,7 +321,42 @@ class MainActivity : Activity() {
             "تم ربط الهاتف ومزامنة البيانات بنجاح." to Pair("Téléphone connecté et données synchronisées.", "Phone connected and data synced successfully."),
             "تمت المزامنة بين الهاتف والحاسوب." to Pair("Synchronisation entre le téléphone et l’ordinateur terminée.", "Phone and computer sync completed."),
             "فشلت المزامنة: " to Pair("Échec de la synchronisation : ", "Sync failed: "),
-            "تعذر الاتصال: " to Pair("Connexion impossible : ", "Connection failed: ")
+            "تعذر الاتصال: " to Pair("Connexion impossible : ", "Connection failed: "),
+"فتح نافذة إدارة العقود" to Pair("Ouvrir le gestionnaire des contrats", "Open contract manager"),
+            "إنشاء عقد جديد" to Pair("Créer un nouveau contrat", "Create new contract"),
+            "مرجع العقد: " to Pair("Référence du contrat : ", "Contract reference: "),
+            "مرجع العقد / رقم العقد" to Pair("Référence / numéro du contrat", "Contract reference / number"),
+            "اسم الشركة المتعاقدة" to Pair("Nom de l’entreprise contractante", "Contracting company name"),
+            "تاريخ بداية العقد YYYY-MM-DD" to Pair("Date de début du contrat AAAA-MM-JJ", "Contract start date YYYY-MM-DD"),
+            "حفظ العقد" to Pair("Enregistrer le contrat", "Save contract"),
+            "إدارة العقود والأسعار" to Pair("Gestion des contrats et des tarifs", "Contract and price management"),
+            "عدد العقود: " to Pair("Nombre de contrats : ", "Number of contracts: "),
+            "عدد البنود: " to Pair("Nombre d’articles : ", "Number of items: "),
+            "العقد النشط: " to Pair("Contrat actif : ", "Active contract: "),
+            "إضافة بند إلى العقد النشط" to Pair("Ajouter un article au contrat actif", "Add item to active contract"),
+            "تعديل سعر بند" to Pair("Modifier le prix d’un article", "Edit item price"),
+            "عرض قائمة البنود والأسعار" to Pair("Afficher les articles et les tarifs", "View items and prices"),
+            "هذا البند موجود مسبقاً في هذا العقد" to Pair("Cet article existe déjà dans ce contrat", "This item already exists in this contract"),
+            "أدخل مرجع العقد واسم الشركة." to Pair("Saisissez la référence du contrat et le nom de l’entreprise.", "Enter the contract reference and company name."),
+            "تم إنشاء العقد. أضف بنوده وأسعاره الآن." to Pair("Contrat créé. Ajoutez maintenant ses articles et tarifs.", "Contract created. Add its items and prices now."),
+            "إجمالي الكميات المسجلة" to Pair("Quantités totales enregistrées", "Total recorded quantities"),
+            "إجمالي مداخيل البيع" to Pair("Revenu total des ventes", "Total sales revenue"),
+            "عدد عمليات البيع" to Pair("Nombre de ventes", "Number of sales"),
+            "العملية: " to Pair("Opération : ", "Operation: "),
+            "الوجهة: " to Pair("Destination : ", "Destination: "),
+            "وصل الخروج: " to Pair("Bon de sortie : ", "Dispatch note: "),
+            "الفاتورة: " to Pair("Facture : ", "Invoice: "),
+            "حالة الدفع: " to Pair("État du paiement : ", "Payment status: "),
+            "تاريخ الفاتورة: " to Pair("Date de facture : ", "Invoice date: "),
+            "تاريخ الدفع: " to Pair("Date de paiement : ", "Payment date: "),
+            "ملاحظات: " to Pair("Remarques : ", "Notes: "),
+            "نظام متابعة بيع النفايات الصناعية وإدارة العقود والتقارير." to Pair("Système de suivi des ventes de déchets industriels, des contrats et des rapports.", "Industrial waste sales, contract and reporting system."),
+            "تصدير أو مشاركة التقرير" to Pair("Exporter ou partager le rapport", "Export or share report"),
+            "أدخل كمية إنتاج صحيحة بالكيلوغرام." to Pair("Saisissez une quantité de production valide en kilogrammes.", "Enter a valid production quantity in kilograms."),
+            "تم حفظ إنتاج الشهر ومزامنته." to Pair("Production mensuelle enregistrée et synchronisée.", "Monthly production saved and synced."),
+            "حُفظ محلياً، تعذرت المزامنة: " to Pair("Enregistré localement, synchronisation impossible : ", "Saved locally; sync failed: "),
+            "تصدير" to Pair("Exporter", "Export"),
+            "العربية" to Pair("Arabe", "Arabic")
 
         )
         val pair = translations[value] ?: return value
@@ -472,6 +509,8 @@ class MainActivity : Activity() {
         pages["reports"] = reportsPage
 
         contractsPage = newPage("العقود والأسعار")
+        contractsPage.addView(actionButton("فتح نافذة إدارة العقود") { showContractManager() }, matchWrap())
+        contractsPage.addView(actionButton("إنشاء عقد جديد") { createContract() }, matchWrap())
         contractsPage.addView(actionButton("تعديل أسعار البنود") { editContractPrices() }, matchWrap())
         contractsPage.addView(actionButton("إضافة بند تعاقدي") { addContractItem() }, matchWrap())
         contractsPage.addView(actionButton("عرض شروط العقد") { showContractTerms() }, matchWrap())
@@ -537,7 +576,8 @@ class MainActivity : Activity() {
             hint = tr(hintText)
             textSize = 15f
             gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
-            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            layoutDirection = if (appLanguage == "ar") View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
+            gravity = if (appLanguage == "ar") Gravity.RIGHT or Gravity.CENTER_VERTICAL else Gravity.LEFT or Gravity.CENTER_VERTICAL
             setPadding(dp(10), dp(4), dp(10), dp(4))
             setBackgroundColor(0xFFFFFFFF.toInt())
             if (numeric) inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
@@ -692,8 +732,8 @@ class MainActivity : Activity() {
 
     private fun editRecord(r: WasteRecord) {
         val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(8), 0, dp(8), 0) }
-        val q = EditText(this).apply { hint = "الكمية الإجمالية كغ"; setText(fmt(r.quantity)) }
-        val income = EditText(this).apply { hint = "المداخيل دج (تحسب من العقد)"; setText(fmt(r.income)) }
+        val q = EditText(this).apply { hint = tr("الكمية الإجمالية كغ"); setText(fmt(r.quantity)) }
+        val income = EditText(this).apply { hint = tr("المداخيل دج (تحسب من العقد)"); setText(fmt(r.income)); isEnabled = false }
         val dispatch = EditText(this).apply { hint = "مرجع وصل الخروج"; setText(r.dispatchReference) }
         val invoiceNo = EditText(this).apply { hint = "رقم الفاتورة"; setText(r.invoiceNumber) }
         val invoiceDate = EditText(this).apply { hint = "تاريخ الفاتورة YYYY-MM-DD"; setText(r.invoiceDate) }
@@ -709,7 +749,9 @@ class MainActivity : Activity() {
                 if (nq == null || niInput == null || nq <= 0 || niInput < 0) {
                     Toast.makeText(this, "قيم غير صحيحة؛ لم يتم حفظ التعديل.", Toast.LENGTH_LONG).show()
                 } else {
-                    val ni = if (r.operationType == "بيع مباشر") nq * (contractItem(r.type)?.price ?: 0.0) else 0.0
+                    // Preserve the sale's original unit price; new contract prices affect future sales only.
+                    val historicalUnitPrice = if (r.quantity > 0.0) r.income / r.quantity else 0.0
+                    val ni = if (r.operationType == "بيع مباشر") nq * historicalUnitPrice else 0.0
                     val index = records.indexOfFirst { it.id == r.id }
                     if (index >= 0) records[index] = r.copy(quantity=nq, income=ni, dispatchReference=dispatch.text.toString().trim(), invoiceNumber=invoiceNo.text.toString().trim(), invoiceDate=invoiceDate.text.toString().trim(), paymentStatus=paymentStatus.text.toString().trim().ifBlank { "غير محدد" }, paymentDate=paymentDate.text.toString().trim())
                     cloud.markRecordDirty(r.id)
@@ -793,7 +835,7 @@ class MainActivity : Activity() {
 
     private fun persistContracts() {
         val a = JSONArray()
-        contractItems.forEach { c -> a.put(JSONObject().apply { put("name",c.name); put("price",c.price); put("unit",c.unit); put("method",c.method); put("companyName",c.companyName) }) }
+        contractItems.forEach { c -> a.put(JSONObject().apply { put("name",c.name); put("price",c.price); put("unit",c.unit); put("method",c.method); put("companyName",c.companyName); put("contractReference",c.contractReference) }) }
         getSharedPreferences("henkel_contracts", MODE_PRIVATE).edit().putString("items", a.toString()).apply()
     }
     private fun loadContracts() {
@@ -801,7 +843,9 @@ class MainActivity : Activity() {
             val raw = getSharedPreferences("henkel_contracts", MODE_PRIVATE).getString("items", null) ?: return
             val a = JSONArray(raw); if (a.length() == 0) return
             contractItems.clear()
-            for (i in 0 until a.length()) { val o=a.getJSONObject(i); contractItems.add(ContractItem(o.optString("name"),o.optDouble("price"),o.optString("unit","كغ"),o.optString("method","بيع"),o.optString("companyName").ifBlank { if (o.optString("method","بيع")=="بيع") "SNC Groupe EL BADISSIA" else "" })) }
+            for (i in 0 until a.length()) { val o=a.getJSONObject(i); contractItems.add(ContractItem(o.optString("name"),o.optDouble("price"),o.optString("unit","كغ"),o.optString("method","بيع"),o.optString("companyName").ifBlank { if (o.optString("method","بيع")=="بيع") "SNC Groupe EL BADISSIA" else "" },o.optString("contractReference","NEW CONTRAT 2026"))) }
+            activeContractReference = getSharedPreferences("henkel_contracts", MODE_PRIVATE).getString("active_reference", contractItems.lastOrNull()?.contractReference ?: activeContractReference) ?: activeContractReference
+            activeContractCompany = getSharedPreferences("henkel_contracts", MODE_PRIVATE).getString("active_company", contractItems.lastOrNull()?.companyName ?: activeContractCompany) ?: activeContractCompany
         } catch (_: Exception) { }
     }
     private fun refreshContracts() {
@@ -810,11 +854,44 @@ class MainActivity : Activity() {
         contractItems.forEach { c ->
             val box = LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(12),dp(10),dp(12),dp(10)); setBackgroundColor(0xFFFFFFFF.toInt()) }
             box.addView(TextView(this).apply { text=c.name; textSize=16f; setTypeface(null,Typeface.BOLD); setTextColor(0xFF247A5A.toInt()) }, matchWrap())
+            box.addView(TextView(this).apply { text=tr("مرجع العقد: ") + c.contractReference; textSize=12f; setTextColor(0xFF607583.toInt()) }, matchWrap())
             box.addView(TextView(this).apply { text="${tr("الشركة: ")}${c.companyName.ifBlank { tr("غير محددة") }}\n"+(if(c.method=="غير قابل للبيع") tr("هذا النوع غير مدرج للبيع في العقد") else "${tr("السعر: ")}${fmt(c.price)} دج / ${c.unit}  •  ${tr("طريقة التعامل: ")}${tr(c.method)}"); textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(5),0,0) }, matchWrap())
             val p=LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); p.bottomMargin=dp(8); contractsPage.addView(box,p)
         }
         contractsPage.addView(TextView(this).apply { text="ملاحظات العقد: الفوترة في نهاية الشهر، والدفع خلال 10 أيام من استلام الفاتورة. أوقات الجمع المذكورة: الأحد إلى الخميس، 08:00–16:00. مدة العقد سنة قابلة للتجديد باتفاق الطرفين وملحق. لا تعتمد هذه الملخصات بدل العقد الأصلي الموقع."; textSize=13f; setTextColor(0xFF795500.toInt()); setPadding(dp(12),dp(12),dp(12),dp(12)); setBackgroundColor(0xFFFFF2CC.toInt()) }, matchWrap())
     }
+    private fun showContractManager() {
+        val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(8), 0, dp(8), 0) }
+        val contracts = contractItems.map { it.contractReference }.distinct()
+        panel.addView(TextView(this).apply { text = tr("عدد العقود: ") + contracts.size + "   •   " + tr("عدد البنود: ") + contractItems.size; textSize = 16f; setPadding(0, dp(8), 0, dp(12)) }, matchWrap())
+        panel.addView(TextView(this).apply { text = tr("العقد النشط: ") + activeContractReference + "\n" + tr("الشركة: ") + activeContractCompany; textSize = 14f }, matchWrap())
+        val dialog = AlertDialog.Builder(this).setTitle(tr("إدارة العقود والأسعار")).setView(panel).setNegativeButton(tr("إغلاق"), null).create()
+        panel.addView(actionButton("إنشاء عقد جديد") { dialog.dismiss(); createContract() }, matchWrap())
+        panel.addView(actionButton("إضافة بند إلى العقد النشط") { dialog.dismiss(); addContractItem() }, matchWrap())
+        panel.addView(actionButton("تعديل سعر بند") { dialog.dismiss(); editContractPrices() }, matchWrap())
+        panel.addView(actionButton("عرض قائمة البنود والأسعار") { dialog.dismiss(); refreshContracts() }, matchWrap())
+        dialog.show()
+    }
+
+    private fun createContract() {
+        val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(8), 0, dp(8), 0) }
+        val ref = EditText(this).apply { hint = tr("مرجع العقد / رقم العقد"); setText("CONTRAT-" + today()) }
+        val company = EditText(this).apply { hint = tr("اسم الشركة المتعاقدة"); setText(activeContractCompany) }
+        val effective = EditText(this).apply { hint = tr("تاريخ بداية العقد YYYY-MM-DD") }
+        listOf(ref, company, effective).forEach { panel.addView(it) }
+        AlertDialog.Builder(this).setTitle(tr("إنشاء عقد جديد")).setView(panel)
+            .setNegativeButton(tr("إلغاء"), null).setPositiveButton(tr("حفظ العقد")) { _, _ ->
+                val r = ref.text.toString().trim(); val c = company.text.toString().trim()
+                if (r.isBlank() || c.isBlank()) Toast.makeText(this, tr("أدخل مرجع العقد واسم الشركة."), Toast.LENGTH_LONG).show()
+                else {
+                    activeContractReference = r; activeContractCompany = c
+                    getSharedPreferences("henkel_contracts", MODE_PRIVATE).edit().putString("active_reference", r).putString("active_company", c).putString("active_effective", effective.text.toString().trim()).apply()
+                    Toast.makeText(this, tr("تم إنشاء العقد. أضف بنوده وأسعاره الآن."), Toast.LENGTH_LONG).show()
+                    addContractItem()
+                }
+            }.show()
+    }
+
     private fun editContractPrices() {
         if (contractItems.isEmpty()) return
         val labels=contractItems.map { it.name }.toTypedArray()
@@ -835,13 +912,14 @@ class MainActivity : Activity() {
         val price=EditText(this).apply { hint="السعر بالدينار (0 للإزالة المجانية)"; inputType=android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
         val unit=EditText(this).apply { hint="الوحدة: كغ أو وحدة"; setText("كغ") }
         val method=EditText(this).apply { hint="طريقة التعامل: بيع / إزالة مجانية"; setText("بيع") }
-        val company=EditText(this).apply { hint="الشركة المتعاقدة / المشترية"; setText("SNC Groupe EL BADISSIA") }
-        listOf(name,price,unit,method,company).forEach { panel.addView(it) }
+        val company=EditText(this).apply { hint=tr("الشركة المتعاقدة / المشترية"); setText(activeContractCompany) }
+        val reference=EditText(this).apply { hint=tr("مرجع العقد / رقم العقد"); setText(activeContractReference) }
+        listOf(name,price,unit,method,company,reference).forEach { panel.addView(it) }
         AlertDialog.Builder(this).setTitle("إضافة بند تعاقدي جديد").setView(panel).setNegativeButton("إلغاء",null)
             .setPositiveButton("إضافة") { _, _ ->
-                val n=name.text.toString().trim(); val p=price.text.toString().replace(',','.').toDoubleOrNull(); val u=unit.text.toString().trim().ifBlank{"كغ"}; val m=method.text.toString().trim().ifBlank{"بيع"}; val co=company.text.toString().trim()
+                val n=name.text.toString().trim(); val p=price.text.toString().replace(',','.').toDoubleOrNull(); val u=unit.text.toString().trim().ifBlank{"كغ"}; val m=method.text.toString().trim().ifBlank{"بيع"}; val co=company.text.toString().trim(); val cr=reference.text.toString().trim()
                 if(n.isBlank() || p==null || p<0) Toast.makeText(this,"أدخل اسم البند وسعراً صحيحاً",Toast.LENGTH_LONG).show()
-                else { if(contractItems.any{it.name==n}) Toast.makeText(this,"هذا البند موجود مسبقاً",Toast.LENGTH_SHORT).show() else { contractItems.add(ContractItem(n,p,u,m,co)); typeSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,types); persistContracts(); cloud.markContractsDirty(); refreshContracts(); if(cloud.connected()) syncCloud(false); Toast.makeText(this,"تمت إضافة البند",Toast.LENGTH_SHORT).show() } }
+                else { if(contractItems.any{it.name==n && it.contractReference==cr}) Toast.makeText(this,tr("هذا البند موجود مسبقاً في هذا العقد"),Toast.LENGTH_SHORT).show() else { contractItems.add(ContractItem(n,p,u,m,co,cr)); activeContractReference=cr; activeContractCompany=co; typeSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,types.map { tr(it) }); persistContracts(); cloud.markContractsDirty(); refreshContracts(); if(cloud.connected()) syncCloud(false); Toast.makeText(this,tr("تمت إضافة البند"),Toast.LENGTH_SHORT).show() } }
             }.show()
     }
     private fun showContractTerms() {
