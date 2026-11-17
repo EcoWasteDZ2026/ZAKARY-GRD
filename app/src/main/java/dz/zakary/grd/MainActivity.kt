@@ -851,7 +851,9 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), dp(12), dp(12), dp(12)); setBackgroundColor(0xFFFFFFFF.toInt()) }
         box.addView(TextView(this).apply { text=tr("المداخيل حسب نوع النفايات"); textSize=18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()) }, matchWrap())
         sales.groupBy { it.type }.forEach { (type, rows) ->
-val unit=rows.firstOrNull()?.saleUnit ?: "وحدة"
+            val q = rows.sumOf { it.quantity }
+            val money = rows.sumOf { it.income }
+            val unit = rows.firstOrNull()?.saleUnit ?: "وحدة"
             box.addView(TextView(this).apply { text="$type\n${tr("الكمية المباعة: ")}${fmt(q)} $unit\n${tr("مداخيل البيع: ")}${fmt(money)} دج"; textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(7),0,dp(7)) },matchWrap())
         }
         dashboardStats.addView(box, matchWrap())
