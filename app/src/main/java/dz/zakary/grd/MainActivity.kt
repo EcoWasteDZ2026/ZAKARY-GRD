@@ -366,6 +366,14 @@ class MainActivity : Activity() {
             "عرض قائمة البنود والأسعار" to Pair("Afficher les articles et les tarifs", "View items and prices"),
             "هذا البند موجود مسبقاً في هذا العقد" to Pair("Cet article existe déjà dans ce contrat", "This item already exists in this contract"),
             "لا توجد بنود في العقد النشط." to Pair("Aucun article dans le contrat actif.", "No items in the active contract."),
+            "مرجع الملحق / النسخة الجديدة" to Pair("Référence de l’avenant / nouvelle version", "Addendum reference / new version"),
+            "تاريخ سريان السعر الجديد YYYY-MM-DD" to Pair("Date d’effet du nouveau prix AAAA-MM-JJ", "New price effective date YYYY-MM-DD"),
+            "اعتماد سعر جديد بملحق" to Pair("Appliquer le nouveau prix par avenant", "Apply new price by addendum"),
+            "لن يتم استبدال العقد السابق. ستُنشأ نسخة تعاقدية جديدة ببنوده وأسعاره، وتبقى عمليات البيع السابقة مرتبطة بسعرها القديم." to Pair("L’ancien contrat ne sera pas remplacé. Une nouvelle version sera créée avec ses articles et tarifs ; les ventes antérieures garderont leurs anciens prix.", "The previous contract will not be overwritten. A new contract version will be created; previous sales keep their original prices."),
+            "حفظ النسخة الجديدة" to Pair("Enregistrer la nouvelle version", "Save new version"),
+            "تحقق من السعر ومرجع الملحق وتاريخ السريان، وتأكد أن المرجع غير مستعمل." to Pair("Vérifiez le prix, la référence de l’avenant et la date d’effet ; la référence doit être unique.", "Check the price, addendum reference and effective date; the reference must be unique."),
+            "تم إنشاء نسخة تعاقدية جديدة مع الحفاظ على الأسعار السابقة." to Pair("Nouvelle version créée ; les anciens prix sont conservés.", "New contract version created; previous prices are preserved."),
+            "تاريخ السريان: " to Pair("Date d’effet : ", "Effective date: "),
             "مرجع العقد موجود مسبقاً." to Pair("Cette référence de contrat existe déjà.", "This contract reference already exists."),
             "أدخل مرجع العقد واسم الشركة." to Pair("Saisissez la référence du contrat et le nom de l’entreprise.", "Enter the contract reference and company name."),
             "تم إنشاء العقد. أضف بنوده وأسعاره الآن." to Pair("Contrat créé. Ajoutez maintenant ses articles et tarifs.", "Contract created. Add its items and prices now."),
@@ -980,18 +988,40 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
     }
 
     private fun editContractPrices() {
-        if (contractItems.isEmpty()) return
-        val editableItems=contractItems.filter { it.contractReference == activeContractReference }
-        if (editableItems.isEmpty()) { Toast.makeText(this,tr("لا توجد بنود في العقد النشط."),Toast.LENGTH_SHORT).show(); return }
-        val labels=editableItems.map { it.name + " — " + fmt(it.price) + " " + it.unit }.toTypedArray()
+        val currentItems = contractItems.filter { it.contractReference == activeContractReference }
+        if (currentItems.isEmpty()) { Toast.makeText(this, tr("لا توجد بنود في العقد النشط."), Toast.LENGTH_SHORT).show(); return }
+        val labels = currentItems.map { it.name + " — " + fmt(it.price) + " " + it.unit }.toTypedArray()
         AlertDialog.Builder(this).setTitle(tr("اختر بنداً لتعديل سعره")).setItems(labels) { _, which ->
-            val c=editableItems[which]
-            val input=EditText(this).apply { hint=tr("السعر بالدينار لكل ") + c.unit; setText(c.price.toString()); inputType=android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
-            AlertDialog.Builder(this).setTitle(tr("تعديل السعر")).setMessage(tr("لا تغيّر سعر عقد موقع إلا بناءً على ملحق تعاقدي موقع. سيُحفظ سعر كل عملية بيع بتاريخها.\\n") + c.name).setView(input)
-.setNegativeButton(tr("إلغاء"),null).setPositiveButton(tr("حفظ السعر الجديد")) { _, _ ->
-                    val v=input.text.toString().replace(',','.').toDoubleOrNull()
-                    if(v==null || v<0) Toast.makeText(this,tr("سعر غير صحيح"),Toast.LENGTH_SHORT).show()
-                    else { c.price=v; persistContracts(); cloud.markContractsDirty(); refreshContracts(); updateIncomePreview(); if(cloud.connected()) syncCloud(false); Toast.makeText(this,tr("تم تحديث السعر"),Toast.LENGTH_SHORT).show() }
+            val selected = currentItems[which]
+            val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(8), 0, dp(8), 0) }
+            val price = EditText(this).apply { hint = tr("السعر بالدينار لكل ") + selected.unit; setText(selected.price.toString()); inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
+            val amendment = EditText(this).apply { hint = tr("مرجع الملحق / النسخة الجديدة"); setText(activeContractReference + "-AVENANT-" + today()) }
+            val effective = EditText(this).apply { hint = tr("تاريخ سريان السعر الجديد YYYY-MM-DD"); setText(today()) }
+            listOf(price, amendment, effective).forEach { panel.addView(it) }
+            AlertDialog.Builder(this).setTitle(tr("اعتماد سعر جديد بملحق")).setMessage(tr("لن يتم استبدال العقد السابق. ستُنشأ نسخة تعاقدية جديدة ببنوده وأسعاره، وتبقى عمليات البيع السابقة مرتبطة بسعرها القديم."))
+                .setView(panel).setNegativeButton(tr("إلغاء"), null).setPositiveButton(tr("حفظ النسخة الجديدة")) { _, _ ->
+                    val newPrice = price.text.toString().replace(',', '.').toDoubleOrNull()
+                    val newReference = amendment.text.toString().trim()
+                    val newEffective = effective.text.toString().trim()
+                    if (newPrice == null || newPrice < 0 || newReference.isBlank() || !isValidIsoDate(newEffective) || contractItems.any { it.contractReference == newReference }) {
+                        Toast.makeText(this, tr("تحقق من السعر ومرجع الملحق وتاريخ السريان، وتأكد أن المرجع غير مستعمل."), Toast.LENGTH_LONG).show()
+                    } else {
+                        val revisedItems = currentItems.map { item ->
+                            ContractItem(item.name, if (item.name == selected.name) newPrice else item.price, item.unit, item.method, item.companyName, newReference, newEffective)
+                        }
+                        contractItems.addAll(revisedItems)
+                        activeContractReference = newReference
+                        activeContractCompany = revisedItems.firstOrNull()?.companyName ?: activeContractCompany
+                        activeContractEffectiveDate = newEffective
+                        getSharedPreferences("henkel_contracts", MODE_PRIVATE).edit().putString("active_reference", newReference).putString("active_company", activeContractCompany).putString("active_effective", newEffective).apply()
+                        val refs = contractItems.map { it.contractReference }.distinct()
+                        contractSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, refs)
+                        contractSpinner.setSelection(refs.indexOf(newReference))
+                        typeSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, revisedItems.map { tr(it.name) })
+                        persistContracts(); cloud.markContractsDirty(); refreshContracts(); updateIncomePreview()
+                        if (cloud.connected()) syncCloud(false)
+                        Toast.makeText(this, tr("تم إنشاء نسخة تعاقدية جديدة مع الحفاظ على الأسعار السابقة."), Toast.LENGTH_LONG).show()
+                    }
                 }.show()
         }.show()
     }
