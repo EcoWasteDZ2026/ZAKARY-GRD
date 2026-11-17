@@ -302,6 +302,9 @@ class MainActivity : Activity() {
         }, matchWrap())
         root.addView(hero, matchWrap())
 
+        // Always-visible settings shortcut so users do not need to scroll the horizontal navigation.
+        root.addView(actionButton("⚙  الإعدادات واللغة") { showPage("settings") }, matchWrap())
+
         val navScroll = HorizontalScrollViewCompat(this)
         val nav = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
         navScroll.addView(nav)
