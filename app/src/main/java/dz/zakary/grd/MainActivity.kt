@@ -140,7 +140,7 @@ class MainActivity : Activity() {
             Triple("لوحة القيادة", "dashboard", "▦"),
             Triple("تسجيل نفايات", "form", "＋"),
             Triple("السجلات", "records", "☷"),
-            Triple("التكاليف والمداخيل", "finance", "دج"),
+            Triple("مداخيل البيع", "finance", "دج"),
             Triple("التقارير والنسخ", "reports", "⇩"),
             Triple("العقود والأسعار", "contracts", "§")
         ).forEach { item ->
@@ -160,8 +160,6 @@ class MainActivity : Activity() {
         root.addView(contentHost, matchWrap())
 
         dashboardPage = newPage("لوحة القيادة")
-        productionInput = field(dashboardPage, "إنتاج المصنع للشهر الحالي بالكيلوغرام", true).apply { setText(loadProduction(today().take(7)).takeIf { it > 0 }?.let { fmt(it) } ?: "") }
-        dashboardPage.addView(actionButton("حفظ كمية إنتاج الشهر") { saveProductionMonth() }, matchWrap())
         dashboardStats = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         dashboardPage.addView(dashboardStats, matchWrap())
         val quick = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -178,9 +176,7 @@ class MainActivity : Activity() {
         typeSpinner = spinner(formPage, types)
         departmentSpinner = spinner(formPage, departments)
         quantityInput = field(formPage, "الكمية الإجمالية بالكيلوغرام", true)
-        recoveredInput = field(formPage, "الكمية المسترجعة بالكيلوغرام", true)
         destinationSpinner = spinner(formPage, destinations)
-        costInput = field(formPage, "تكلفة المعالجة أو النقل (دج)", true)
         incomeInput = field(formPage, "مداخيل البيع (تحسب آلياً من العقد)", true)
         operationSpinner = spinner(formPage, listOf("توليد/تسجيل الكمية المتولدة", "بيع مباشر"))
         buyerInput = field(formPage, "الشركة المشترية (للبيع فقط)")
@@ -218,7 +214,7 @@ class MainActivity : Activity() {
         recordsPage.addView(recordList, matchWrap())
         pages["records"] = recordsPage
 
-        financePage = newPage("التكاليف والمداخيل")
+        financePage = newPage("مداخيل البيع")
         pages["finance"] = financePage
 
         reportsPage = newPage("التقارير والنسخ الاحتياطي")
@@ -317,8 +313,8 @@ class MainActivity : Activity() {
     private fun saveRecord() {
         val date = dateInput.text.toString().trim()
         val quantity = number(quantityInput)
-        val recovered = number(recoveredInput)
-        val cost = number(costInput, 0.0)
+        val recovered = 0.0
+        val cost = 0.0
         val selectedType = typeSpinner.selectedItem.toString()
         val operation = operationSpinner.selectedItem.toString()
         val item = contractItem(selectedType)
@@ -330,9 +326,8 @@ class MainActivity : Activity() {
             if (buyer.isBlank() || buyer != item.companyName) { Toast.makeText(this, "الشركة المشترية يجب أن تطابق الشركة المحددة في العقد.", Toast.LENGTH_LONG).show(); return }
             (quantity ?: 0.0) * item.price
         } else 0.0
-        if (date.isBlank() || quantity == null || recovered == null || cost == null ||
-            quantity <= 0 || recovered < 0 || recovered > quantity || cost < 0) {
-            Toast.makeText(this, "تحقق من التاريخ والكميات والتكاليف. المسترجع يجب ألا يتجاوز الإجمالي.", Toast.LENGTH_LONG).show()
+        if (date.isBlank() || quantity == null || quantity <= 0) {
+            Toast.makeText(this, "تحقق من التاريخ والكمية.", Toast.LENGTH_LONG).show()
             return
         }
         val newId = UUID.randomUUID().toString()
@@ -363,8 +358,6 @@ class MainActivity : Activity() {
     private fun clearForm() {
         dateInput.setText(today())
         quantityInput.setText("")
-        recoveredInput.setText("")
-        costInput.setText("")
         incomeInput.setText("0")
         buyerInput.setText("")
         operationSpinner.setSelection(0)
@@ -408,7 +401,7 @@ class MainActivity : Activity() {
                 setTextColor(0xFF247A5A.toInt())
             }, matchWrap())
             card.addView(TextView(this).apply {
-                text = "القسم: ${r.department}\nالإجمالي: ${fmt(r.quantity)} ${contractItem(r.type)?.unit ?: "وحدة"} | المسترجع: ${fmt(r.recovered)}\nالعملية: ${r.operationType} | الشركة: ${r.buyerCompany.ifBlank { "—" }}\nالوجهة: ${r.destination}\nالتكلفة: ${fmt(r.cost)} دج | المداخيل: ${fmt(r.income)} دج\nوصل الخروج: ${r.dispatchReference.ifBlank { "—" }} | الفاتورة: ${r.invoiceNumber.ifBlank { "—" }}\nحالة الدفع: ${r.paymentStatus} | تاريخ الفاتورة: ${r.invoiceDate.ifBlank { "—" }} | تاريخ الدفع: ${r.paymentDate.ifBlank { "—" }}" +
+                text = "الكمية: ${fmt(r.quantity)} ${contractItem(r.type)?.unit ?: "وحدة"}\nالعملية: ${r.operationType} | الشركة: ${r.buyerCompany.ifBlank { "—" }}\nالوجهة: ${r.destination}\nمداخيل البيع: ${fmt(r.income)} دج\nوصل الخروج: ${r.dispatchReference.ifBlank { "—" }} | الفاتورة: ${r.invoiceNumber.ifBlank { "—" }}\nحالة الدفع: ${r.paymentStatus} | تاريخ الفاتورة: ${r.invoiceDate.ifBlank { "—" }} | تاريخ الدفع: ${r.paymentDate.ifBlank { "—" }}" +
                     if (r.note.isBlank()) "" else "\nملاحظات: ${r.note}"
                 textSize = 14f
                 setTextColor(0xFF243746.toInt())
@@ -439,29 +432,25 @@ class MainActivity : Activity() {
     private fun editRecord(r: WasteRecord) {
         val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(8), 0, dp(8), 0) }
         val q = EditText(this).apply { hint = "الكمية الإجمالية كغ"; setText(fmt(r.quantity)) }
-        val rec = EditText(this).apply { hint = "الكمية المسترجعة كغ"; setText(fmt(r.recovered)) }
-        val cost = EditText(this).apply { hint = "التكلفة دج"; setText(fmt(r.cost)) }
         val income = EditText(this).apply { hint = "المداخيل دج (تحسب من العقد)"; setText(fmt(r.income)) }
         val dispatch = EditText(this).apply { hint = "مرجع وصل الخروج"; setText(r.dispatchReference) }
         val invoiceNo = EditText(this).apply { hint = "رقم الفاتورة"; setText(r.invoiceNumber) }
         val invoiceDate = EditText(this).apply { hint = "تاريخ الفاتورة YYYY-MM-DD"; setText(r.invoiceDate) }
         val paymentStatus = EditText(this).apply { hint = "حالة الدفع"; setText(r.paymentStatus) }
         val paymentDate = EditText(this).apply { hint = "تاريخ الدفع YYYY-MM-DD"; setText(r.paymentDate) }
-        listOf(q, rec, cost, income, dispatch, invoiceNo, invoiceDate, paymentStatus, paymentDate).forEach { panel.addView(it) }
-        listOf(q, rec, cost, income).forEach { it.inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
+        listOf(q, income, dispatch, invoiceNo, invoiceDate, paymentStatus, paymentDate).forEach { panel.addView(it) }
+        listOf(q, income).forEach { it.inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL }
         AlertDialog.Builder(this).setTitle("تعديل ${r.type}").setView(panel)
             .setNegativeButton("إلغاء", null)
             .setPositiveButton("حفظ") { _, _ ->
                 val nq = q.text.toString().replace(',', '.').toDoubleOrNull()
-                val nr = rec.text.toString().replace(',', '.').toDoubleOrNull()
-                val nc = cost.text.toString().replace(',', '.').toDoubleOrNull()
                 val niInput = income.text.toString().replace(',', '.').toDoubleOrNull()
-                if (nq == null || nr == null || nc == null || niInput == null || nq <= 0 || nr < 0 || nr > nq || nc < 0 || niInput < 0) {
+                if (nq == null || niInput == null || nq <= 0 || niInput < 0) {
                     Toast.makeText(this, "قيم غير صحيحة؛ لم يتم حفظ التعديل.", Toast.LENGTH_LONG).show()
                 } else {
                     val ni = if (r.operationType == "بيع مباشر") nq * (contractItem(r.type)?.price ?: 0.0) else 0.0
                     val index = records.indexOfFirst { it.id == r.id }
-                    if (index >= 0) records[index] = r.copy(quantity=nq, recovered=nr, cost=nc, income=ni, dispatchReference=dispatch.text.toString().trim(), invoiceNumber=invoiceNo.text.toString().trim(), invoiceDate=invoiceDate.text.toString().trim(), paymentStatus=paymentStatus.text.toString().trim().ifBlank { "غير محدد" }, paymentDate=paymentDate.text.toString().trim())
+                    if (index >= 0) records[index] = r.copy(quantity=nq, income=ni, dispatchReference=dispatch.text.toString().trim(), invoiceNumber=invoiceNo.text.toString().trim(), invoiceDate=invoiceDate.text.toString().trim(), paymentStatus=paymentStatus.text.toString().trim().ifBlank { "غير محدد" }, paymentDate=paymentDate.text.toString().trim())
                     cloud.markRecordDirty(r.id)
                     persistRecords(); renderRecords(); refreshDashboard(); refreshFinance()
                     if (cloud.connected()) syncCloud(false)
@@ -471,60 +460,20 @@ class MainActivity : Activity() {
 
     private fun refreshDashboard() {
         if (!::dashboardStats.isInitialized) return
-        if (::productionInput.isInitialized && productionInput.text.isNullOrBlank()) { val v=loadProduction(today().take(7)); if(v>0) productionInput.setText(fmt(v)) }
         dashboardStats.removeAllViews()
         val unitGroups = records.groupBy { contractItem(it.type)?.unit ?: "وحدة" }
-        fun unitTotals(selector: (WasteRecord) -> Double) = unitGroups.entries.joinToString(" + ") { (unit, rows) -> "${fmt(rows.sumOf(selector))} $unit" }.ifBlank { "0" }
-        val kgRows = records.filter { contractItem(it.type)?.unit == "كغ" }
-        val kgTotal = kgRows.sumOf { it.quantity }
-        val kgRecovered = kgRows.sumOf { it.recovered }
-        val costs = records.sumOf { it.cost }
+        val total = unitGroups.entries.joinToString(" + ") { (unit, rows) -> "${fmt(rows.sumOf { it.quantity })} $unit" }.ifBlank { "0" }
         val income = records.sumOf { it.income }
-        val rateByUnit = unitGroups.entries.joinToString(" | ") { (unit, rows) ->
-            val q = rows.sumOf { it.quantity }; val r = rows.sumOf { it.recovered }
-            "$unit: ${if(q>0) String.format(Locale.US, "%.1f", r*100/q) else "0"}%"
-        }.ifBlank { "0%" }
-        dashboardStats.addView(metric("الكميات المسجلة حسب الوحدة", unitTotals { it.quantity }), matchWrap())
-        dashboardStats.addView(metric("الكميات المسترجعة حسب الوحدة", unitTotals { it.recovered }), matchWrap())
-        dashboardStats.addView(metric("نسبة الاسترجاع حسب الوحدة", rateByUnit), matchWrap())
-        dashboardStats.addView(metric("مؤشر النفايات إلى الإنتاج (كغ/100كغ)", if(loadProduction(today().take(7))>0) "${fmt(kgTotal/loadProduction(today().take(7))*100)} كغ/100كغ | المرجع الداخلي 0.96" else "أدخل إنتاج الشهر لحساب المؤشر؛ المرجع الداخلي 0.96"), matchWrap())
-        dashboardStats.addView(metric("صافي التكاليف", "${fmt(costs-income)} دج"), matchWrap())
-        dashboardStats.addView(metric("عدد السجلات", records.size.toString()), matchWrap())
-        val typesBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), dp(12), dp(12), dp(12)); setBackgroundColor(0xFFFFFFFF.toInt()) }
-        typesBox.addView(TextView(this).apply { text="ملخص حسب نوع النفايات"; textSize=18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()) }, matchWrap())
-        types.distinct().forEach { type ->
-            val subset = records.filter { it.type == type }
-            if (subset.isNotEmpty()) {
-                val qty = subset.sumOf { it.quantity }
-                val rec = subset.sumOf { it.recovered }
-                val costType = subset.sumOf { it.cost }
-                val incomeType = subset.sumOf { it.income }
-                val netType = costType - incomeType
-                val perKg = if (qty > 0) costType / qty else 0.0
-                val typeCard = LinearLayout(this).apply {
-                    orientation = LinearLayout.VERTICAL
-                    layoutDirection = View.LAYOUT_DIRECTION_RTL
-                    setPadding(dp(10), dp(9), dp(10), dp(9))
-                    setBackgroundColor(0xFFF1F6F5.toInt())
-                }
-                typeCard.addView(TextView(this).apply {
-                    text = "♻ $type"
-                    textSize = 16f
-                    setTypeface(null, Typeface.BOLD)
-                    setTextColor(0xFF247A5A.toInt())
-                }, matchWrap())
-                typeCard.addView(TextView(this).apply {
-                    text = "الكمية: ${fmt(qty)} ${contractItem(type)?.unit ?: "وحدة"}  |  مسترجع: ${fmt(rec)}\nالتكاليف: ${fmt(costType)} دج\nالمداخيل: ${fmt(incomeType)} دج  |  صافي التكلفة: ${fmt(netType)} دج\nتكلفة الوحدة: ${fmt(perKg)} دج / ${contractItem(type)?.unit ?: "وحدة"}"
-                    textSize = 14f
-                    setTextColor(0xFF243746.toInt())
-                    setPadding(0, dp(5), 0, 0)
-                }, matchWrap())
-                val cp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-                cp.bottomMargin = dp(7)
-                typesBox.addView(typeCard, cp)
-            }
+        dashboardStats.addView(metric("إجمالي الكميات المسجلة", total), matchWrap())
+        dashboardStats.addView(metric("إجمالي مداخيل البيع", "${fmt(income)} دج"), matchWrap())
+        dashboardStats.addView(metric("عدد عمليات البيع", records.count { it.operationType == "بيع مباشر" }.toString()), matchWrap())
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), dp(12), dp(12), dp(12)); setBackgroundColor(0xFFFFFFFF.toInt()) }
+        box.addView(TextView(this).apply { text="المداخيل حسب نوع النفايات"; textSize=18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()) }, matchWrap())
+        records.filter { it.operationType == "بيع مباشر" }.groupBy { it.type }.forEach { (type, rows) ->
+            val q=rows.sumOf { it.quantity }; val money=rows.sumOf { it.income }; val unit=contractItem(type)?.unit ?: "وحدة"
+            box.addView(TextView(this).apply { text="$type\nالكمية المباعة: ${fmt(q)} $unit\nمداخيل البيع: ${fmt(money)} دج"; textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(7),0,dp(7)) },matchWrap())
         }
-        dashboardStats.addView(typesBox, matchWrap())
+        dashboardStats.addView(box, matchWrap())
     }
 
     private fun syncProductionCloud() {
@@ -570,52 +519,15 @@ class MainActivity : Activity() {
     private fun refreshFinance() {
         if (!::financePage.isInitialized) return
         while (financePage.childCount > 1) financePage.removeViewAt(1)
-        val costs = records.sumOf { it.cost }
-        val income = records.sumOf { it.income }
-        val net = costs - income
-        financePage.addView(metric("إجمالي تكاليف المعالجة والنقل", "${fmt(costs)} دج"), matchWrap())
-        financePage.addView(metric("إجمالي مداخيل التثمين والبيع", "${fmt(income)} دج"), matchWrap())
-        financePage.addView(metric("صافي التكاليف (التكاليف - المداخيل)", "${fmt(net)} دج"), matchWrap())
-        financePage.addView(actionButton("＋ إضافة عملية مالية عبر تسجيل النفايات") { showPage("form") }, matchWrap())
-        financePage.addView(TextView(this).apply {
-            text = "تفصيل مالي مستقل لكل نوع نفايات"
-            textSize = 19f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()); setPadding(0, dp(14), 0, dp(8))
-        }, matchWrap())
-        types.distinct().forEach { type ->
-            val subset = records.filter { it.type == type }
-            if (subset.isNotEmpty()) {
-                val qty = subset.sumOf { it.quantity }
-                val recovered = subset.sumOf { it.recovered }
-                val costsForType = subset.sumOf { it.cost }
-                val incomeForType = subset.sumOf { it.income }
-                val netForType = costsForType - incomeForType
-                val costPerKg = if (qty > 0) costsForType / qty else 0.0
-                val recoveredCostPerKg = if (recovered > 0) costsForType / recovered else 0.0
-                val box = LinearLayout(this).apply {
-                    orientation = LinearLayout.VERTICAL
-                    layoutDirection = View.LAYOUT_DIRECTION_RTL
-                    setPadding(dp(13), dp(12), dp(13), dp(12))
-                    setBackgroundColor(0xFFFFFFFF.toInt())
-                }
-                box.addView(TextView(this).apply {
-                    text = "♻ $type"
-                    textSize = 18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF247A5A.toInt())
-                }, matchWrap())
-                box.addView(TextView(this).apply {
-                    text = "الكمية المنتجة: ${fmt(qty)} كغ\nالكمية المسترجعة: ${fmt(recovered)} كغ\nتكاليف هذا النوع: ${fmt(costsForType)} دج\nمداخيل هذا النوع: ${fmt(incomeForType)} دج\nصافي تكلفة هذا النوع: ${fmt(netForType)} دج\nتكلفة كل 1 كغ منتج: ${fmt(costPerKg)} دج/كغ\nتكلفة كل 1 كغ مسترجع (مؤشر تقريبي): ${fmt(recoveredCostPerKg)} دج/كغ"
-                    textSize = 14f; setTextColor(0xFF243746.toInt()); setPadding(0, dp(7), 0, 0)
-                }, matchWrap())
-                val bp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-                bp.bottomMargin = dp(9)
-                financePage.addView(box, bp)
-            }
+        val sales = records.filter { it.operationType == "بيع مباشر" }
+        financePage.addView(metric("إجمالي مداخيل البيع", "${fmt(sales.sumOf { it.income })} دج"), matchWrap())
+        financePage.addView(actionButton("＋ تسجيل عملية بيع") { showPage("form") }, matchWrap())
+        financePage.addView(TextView(this).apply { text="تفصيل المداخيل حسب نوع النفاية"; textSize=19f; setTypeface(null,Typeface.BOLD); setTextColor(0xFF173650.toInt()); setPadding(0,dp(14),0,dp(8)) },matchWrap())
+        sales.groupBy { it.type }.forEach { (type, rows) ->
+            val q=rows.sumOf { it.quantity }; val income=rows.sumOf { it.income }; val unit=contractItem(type)?.unit ?: "وحدة"
+            financePage.addView(metric(type, "الكمية المباعة: ${fmt(q)} $unit\nالمداخيل: ${fmt(income)} دج"), matchWrap())
         }
-        financePage.addView(TextView(this).apply {
-            text = "تُحسب تكلفة كل نوع وحده من العمليات المسجلة لذلك النوع، ولا تُوزَّع تكلفة نوع على الأنواع الأخرى. تكلفة الكيلوغرام = تكاليف النوع ÷ كميته المنتجة. أدخل تكاليف النقل والمعالجة لكل سجل بدقة، فهذه الحسابات تعتمد على البيانات التي تدخلها."
-            textSize = 14f; setTextColor(0xFF795500.toInt()); setPadding(dp(12), dp(12), dp(12), dp(12)); setBackgroundColor(0xFFFFF2CC.toInt())
-        }, matchWrap())
     }
-
 
     private fun persistContracts() {
         val a = JSONArray()
@@ -754,7 +666,7 @@ class MainActivity : Activity() {
         val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(10), dp(4), dp(10), dp(4)) }
         val project = EditText(this).apply { hint = "رابط Supabase: https://xxxx.supabase.co"; setText(cloud.projectUrl()) }
         val publicKey = EditText(this).apply { hint = "المفتاح العام Publishable / anon"; setText(cloud.publicKey()); textSize = 12f }
-        val email = EditText(this).apply { hint = "البريد الإلكتروني"; setText(cloud.email()); inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS }
+        val email = EditText(this).apply { hint = "البريد الإلكتروني لحساب المزامنة"; setText(cloud.email()); inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS }
         val password = EditText(this).apply { hint = "كلمة مرور حساب Supabase"; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD }
         listOf(project, publicKey, email, password).forEach { panel.addView(it, matchWrap()) }
         AlertDialog.Builder(this).setTitle("ربط الهاتف بقاعدة هنكل المشتركة")
