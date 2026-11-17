@@ -1,4 +1,5 @@
 name: Build HENKEL ZAKARY GRD APK
+# Rebuild requested after sales-only and per-waste pricing updates
 
 on:
   workflow_dispatch:
