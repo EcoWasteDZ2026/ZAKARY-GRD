@@ -47,7 +47,7 @@ class MainActivity : Activity() {
         ContractItem("نفايات المنصات الخشبية وبقايا الخشب", 2.50, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
         ContractItem("أكياس وأغلفة PE ملوثة بالمنظفات وغير قابلة للاسترجاع", 0.0, "حسب الكمية", "غير قابل للبيع")
     )
-    private val types get() = contractItems.map { it.name } + listOf("نفايات صناعية أخرى (تُضاف لاحقاً)")
+    private val types get() = contractItems.filter { it.contractReference == activeContractReference }.map { it.name } + listOf("نفايات صناعية أخرى (تُضاف لاحقاً)")
     private fun contractItem(name: String) = contractItems.find { it.name == name }
     private val departments = listOf("الإنتاج", "المخازن", "الصيانة", "المخبر", "معالجة المياه", "الإدارة", "أخرى")
     private val destinations = listOf("خروج إلى الشركة المشترية", "أخرى")
@@ -62,6 +62,7 @@ class MainActivity : Activity() {
     private lateinit var contractsPage: LinearLayout
     private lateinit var settingsPage: LinearLayout
     private lateinit var languageSpinner: Spinner
+    private lateinit var contractSpinner: Spinner
     private var appLanguage: String = "ar"
     private lateinit var dashboardStats: LinearLayout
     private lateinit var recordList: LinearLayout
@@ -363,6 +364,30 @@ class MainActivity : Activity() {
         return if (appLanguage == "fr") pair.first else pair.second
     }
 
+
+    private fun untr(value: String): String {
+        if (appLanguage == "ar") return value
+        val reverse = mapOf(
+            "Cartons et déchets de papier" to "صناديق كرتونية ونفايات الورق", "Cardboard boxes and paper waste" to "صناديق كرتونية ونفايات الورق",
+            "Films plastiques et emballages" to "الأغلفة البلاستيكية (المطاطية وأغلفة التغليف)", "Plastic wrapping films and packaging" to "الأغلفة البلاستيكية (المطاطية وأغلفة التغليف)",
+            "Sacs Big Bags" to "أكياس Big Bags", "Big Bags" to "أكياس Big Bags", "Fûts métalliques" to "براميل معدنية", "Metal drums" to "براميل معدنية",
+            "Palettes et chutes de bois" to "نفايات المنصات الخشبية وبقايا الخشب", "Wooden pallets and wood scraps" to "نفايات المنصات الخشبية وبقايا الخشب",
+            "Sacs et emballages PE contaminés par des détergents, non valorisables" to "أكياس وأغلفة PE ملوثة بالمنظفات وغير قابلة للاسترجاع",
+            "PE bags and packaging contaminated with detergents, not recoverable" to "أكياس وأغلفة PE ملوثة بالمنظفات وغير قابلة للاسترجاع",
+            "Autres déchets industriels (à ajouter)" to "نفايات صناعية أخرى (تُضاف لاحقاً)", "Other industrial waste (to be added)" to "نفايات صناعية أخرى (تُضاف لاحقاً)",
+            "Production" to "الإنتاج", "Magasins" to "المخازن", "Warehouses" to "المخازن", "Maintenance" to "الصيانة",
+            "Laboratoire" to "المخبر", "Laboratory" to "المخبر", "Traitement des eaux" to "معالجة المياه", "Water treatment" to "معالجة المياه",
+            "Administration" to "الإدارة", "Autre" to "أخرى", "Other" to "أخرى", "Sortie vers l’acheteur" to "خروج إلى الشركة المشترية",
+            "Dispatch to buyer" to "خروج إلى الشركة المشترية", "Vente directe" to "بيع مباشر", "Non défini" to "غير محدد",
+            "Unspecified" to "غير محدد", "Non facturé" to "غير مفوتر", "Not invoiced" to "غير مفوتر",
+            "Facture émise - non payée" to "فاتورة صادرة - غير مدفوع", "Invoice issued - unpaid" to "فاتورة صادرة - غير مدفوع",
+            "Payé" to "مدفوع", "Paid" to "مدفوع", "En retard" to "متأخر", "Overdue" to "متأخر",
+            "kg" to "كغ", "unité" to "وحدة", "unit" to "وحدة", "Selon quantité" to "حسب الكمية", "By quantity" to "حسب الكمية",
+            "Non vendable" to "غير قابل للبيع", "Not for sale" to "غير قابل للبيع"
+        )
+        return reverse[value] ?: value
+    }
+
     private fun buildScreen() {
         val scroll = ScrollView(this)
         root = LinearLayout(this).apply {
@@ -450,6 +475,8 @@ class MainActivity : Activity() {
 
         formPage = newPage("تسجيل عملية نفايات")
         dateInput = field(formPage, "التاريخ (YYYY-MM-DD)").apply { setText(today()) }
+        contractSpinner = spinner(formPage, contractItems.map { it.contractReference }.distinct())
+        contractSpinner.setSelection((contractItems.map { it.contractReference }.distinct().indexOf(activeContractReference)).coerceAtLeast(0))
         typeSpinner = spinner(formPage, types)
         departmentSpinner = spinner(formPage, departments)
         quantityInput = field(formPage, "الكمية الإجمالية بالكيلوغرام", true)
@@ -457,10 +484,19 @@ class MainActivity : Activity() {
         incomeInput = field(formPage, "مداخيل البيع (تحسب آلياً من العقد)", true)
         operationSpinner = spinner(formPage, listOf("بيع مباشر"))
         buyerInput = field(formPage, "الشركة المشترية (للبيع فقط)")
+        contractSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                activeContractReference = contractSpinner.selectedItem?.toString() ?: activeContractReference
+                typeSpinner.adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item,
+                    contractItems.filter { it.contractReference == activeContractReference }.map { tr(it.name) } + tr("نفايات صناعية أخرى (تُضاف لاحقاً)"))
+                updateIncomePreview()
+            }
+        }
         typeSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val item = contractItem(typeSpinner.selectedItem?.toString() ?: "")
+                val item = contractItem(untr(typeSpinner.selectedItem?.toString() ?: ""))
                 if (item != null) {
                     buyerInput.setText(if (item.method == "بيع") item.companyName else "")
                     operationSpinner.setSelection(0)
@@ -616,7 +652,7 @@ class MainActivity : Activity() {
         val quantity = number(quantityInput)
         val recovered = 0.0
         val cost = 0.0
-        val selectedType = typeSpinner.selectedItem.toString()
+        val selectedType = untr(typeSpinner.selectedItem.toString())
         val operation = "بيع مباشر"
         val item = contractItem(selectedType)
         val buyer = buyerInput.text.toString().trim()
@@ -633,9 +669,9 @@ class MainActivity : Activity() {
         }
         val newId = UUID.randomUUID().toString()
         records.add(0, WasteRecord(newId, date, selectedType,
-            departmentSpinner.selectedItem.toString(), quantity, recovered, destinationSpinner.selectedItem.toString(),
+            untr(departmentSpinner.selectedItem.toString()), quantity, recovered, untr(destinationSpinner.selectedItem.toString()),
             cost, income, noteInput.text.toString().trim(), if (operation == "بيع مباشر") buyer else "", operation,
-            dispatchInput.text.toString().trim(), invoiceNumberInput.text.toString().trim(), invoiceDateInput.text.toString().trim(), paymentStatusSpinner.selectedItem.toString(), paymentDateInput.text.toString().trim()))
+            dispatchInput.text.toString().trim(), invoiceNumberInput.text.toString().trim(), invoiceDateInput.text.toString().trim(), untr(paymentStatusSpinner.selectedItem.toString()), paymentDateInput.text.toString().trim()))
         persistRecords()
         cloud.markRecordDirty(newId)
         if (cloud.connected()) syncCloud(false)
@@ -649,7 +685,7 @@ class MainActivity : Activity() {
 
     private fun updateIncomePreview() {
         if (!::incomeInput.isInitialized || !::typeSpinner.isInitialized || !::quantityInput.isInitialized) return
-        val item = contractItem(typeSpinner.selectedItem?.toString() ?: "")
+        val item = contractItem(untr(typeSpinner.selectedItem?.toString() ?: ""))
         val q = number(quantityInput, 0.0) ?: 0.0
         val sale = true
         incomeInput.setText(if (sale && item?.method == "بيع") fmt(q * item.price) else "0")
@@ -919,7 +955,7 @@ class MainActivity : Activity() {
             .setPositiveButton("إضافة") { _, _ ->
                 val n=name.text.toString().trim(); val p=price.text.toString().replace(',','.').toDoubleOrNull(); val u=unit.text.toString().trim().ifBlank{"كغ"}; val m=method.text.toString().trim().ifBlank{"بيع"}; val co=company.text.toString().trim(); val cr=reference.text.toString().trim()
                 if(n.isBlank() || p==null || p<0) Toast.makeText(this,"أدخل اسم البند وسعراً صحيحاً",Toast.LENGTH_LONG).show()
-                else { if(contractItems.any{it.name==n && it.contractReference==cr}) Toast.makeText(this,tr("هذا البند موجود مسبقاً في هذا العقد"),Toast.LENGTH_SHORT).show() else { contractItems.add(ContractItem(n,p,u,m,co,cr)); activeContractReference=cr; activeContractCompany=co; typeSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,types.map { tr(it) }); persistContracts(); cloud.markContractsDirty(); refreshContracts(); if(cloud.connected()) syncCloud(false); Toast.makeText(this,tr("تمت إضافة البند"),Toast.LENGTH_SHORT).show() } }
+                else { if(contractItems.any{it.name==n && it.contractReference==cr}) Toast.makeText(this,tr("هذا البند موجود مسبقاً في هذا العقد"),Toast.LENGTH_SHORT).show() else { contractItems.add(ContractItem(n,p,u,m,co,cr)); activeContractReference=cr; activeContractCompany=co; val refs=contractItems.map { it.contractReference }.distinct(); contractSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,refs); contractSpinner.setSelection(refs.indexOf(cr)); typeSpinner.adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,types.map { tr(it) }); persistContracts(); cloud.markContractsDirty(); refreshContracts(); if(cloud.connected()) syncCloud(false); Toast.makeText(this,tr("تمت إضافة البند"),Toast.LENGTH_SHORT).show() } }
             }.show()
     }
     private fun showContractTerms() {
