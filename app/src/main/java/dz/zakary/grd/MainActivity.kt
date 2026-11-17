@@ -94,11 +94,67 @@ class MainActivity : Activity() {
         if (cloud.connected()) syncCloud(false)
     }
 
+    private fun tr(value: String): String {
+        if (appLanguage == "ar") return value
+        val translations = mapOf(
+            "لوحة القيادة" to Pair("Tableau de bord", "Dashboard"),
+            "تسجيل نفايات" to Pair("Enregistrer un déchet", "Record waste"),
+            "السجلات" to Pair("Registres", "Records"),
+            "مداخيل البيع" to Pair("Revenus des ventes", "Sales revenue"),
+            "التقارير والنسخ" to Pair("Rapports et sauvegardes", "Reports & backups"),
+            "العقود والأسعار" to Pair("Contrats et tarifs", "Contracts & prices"),
+            "الإعدادات" to Pair("Paramètres", "Settings"),
+            "نظام تسيير واسترجاع النفايات الصناعية — مصنع هنكل، ولاية ميلة" to Pair("Système de gestion et de valorisation des déchets industriels — usine Henkel, Mila", "Industrial waste management system — Henkel plant, Mila"),
+            "HENKEL MILA • العقود • التتبع • التثمين • التقارير" to Pair("HENKEL MILA • Contrats • Suivi • Valorisation • Rapports", "HENKEL MILA • Contracts • Tracking • Sales • Reports"),
+            "＋ تسجيل نفايات جديدة" to Pair("＋ Enregistrer un déchet", "＋ Record new waste"),
+            "☷ عرض السجلات" to Pair("☷ Voir les registres", "☷ View records"),
+            "⇩ تصدير تقرير CSV" to Pair("⇩ Exporter le rapport CSV", "⇩ Export CSV report"),
+            "☁ ربط الحساب والمزامنة" to Pair("☁ Connecter le compte et synchroniser", "☁ Connect account & sync"),
+            "⟳ مزامنة البيانات مع الحاسوب" to Pair("⟳ Synchroniser avec l’ordinateur", "⟳ Sync data with computer"),
+            "تسجيل عملية نفايات" to Pair("Enregistrer une opération de déchet", "Record a waste transaction"),
+            "التاريخ (YYYY-MM-DD)" to Pair("Date (AAAA-MM-JJ)", "Date (YYYY-MM-DD)"),
+            "الكمية الإجمالية بالكيلوغرام" to Pair("Quantité totale en kilogrammes", "Total quantity in kilograms"),
+            "مداخيل البيع (تحسب آلياً من العقد)" to Pair("Revenu de vente (calculé automatiquement selon le contrat)", "Sales revenue (calculated automatically from contract)"),
+            "ملاحظات (اختياري)" to Pair("Remarques (facultatif)", "Notes (optional)"),
+            "مرجع وصل الخروج / أمر الخروج" to Pair("Référence du bon de sortie", "Dispatch note reference"),
+            "رقم الفاتورة" to Pair("Numéro de facture", "Invoice number"),
+            "تاريخ الفاتورة YYYY-MM-DD" to Pair("Date de facture AAAA-MM-JJ", "Invoice date YYYY-MM-DD"),
+            "تاريخ الدفع YYYY-MM-DD" to Pair("Date de paiement AAAA-MM-JJ", "Payment date YYYY-MM-DD"),
+            "حفظ العملية" to Pair("Enregistrer l’opération", "Save transaction"),
+            "مسح حقول الإدخال" to Pair("Effacer les champs", "Clear fields"),
+            "سجل العمليات" to Pair("Registre des opérations", "Transaction records"),
+            "بحث حسب النوع أو القسم أو التاريخ" to Pair("Rechercher par type, service ou date", "Search by type, department or date"),
+            "بحث / تحديث السجل" to Pair("Rechercher / Actualiser", "Search / Refresh"),
+            "إلغاء البحث" to Pair("Effacer la recherche", "Clear search"),
+            "التقارير والنسخ الاحتياطي" to Pair("Rapports et sauvegarde", "Reports & backup"),
+            "ملاحظة: تحفظ البيانات محليًا وتُزامَن مع حساب هنكل المشترك عند الاتصال. احتفظ بنسخة احتياطية دورية، ولا تشارك بيانات الدخول أو مفاتيح الإدارة." to Pair("Remarque : les données sont enregistrées localement et synchronisées avec le compte Henkel lorsqu’il est connecté. Effectuez des sauvegardes régulières et ne partagez pas vos identifiants ni vos clés d’administration.", "Note: Data is stored locally and synced with the shared Henkel account when connected. Keep regular backups and do not share login details or admin keys."),
+            "تصدير تقرير CSV" to Pair("Exporter le rapport CSV", "Export CSV report"),
+            "مشاركة / حفظ نسخة احتياطية" to Pair("Partager / Enregistrer une sauvegarde", "Share / Save backup"),
+            "استيراد نسخة احتياطية" to Pair("Importer une sauvegarde", "Import backup"),
+            "عرض ملخص حسب نوع النفايات" to Pair("Afficher le résumé par type de déchet", "View summary by waste type"),
+            "تعديل أسعار البنود" to Pair("Modifier les prix des articles", "Edit item prices"),
+            "إضافة بند تعاقدي" to Pair("Ajouter un article au contrat", "Add contract item"),
+            "عرض شروط العقد" to Pair("Afficher les conditions du contrat", "View contract terms"),
+            "مزامنة العقود" to Pair("Synchroniser les contrats", "Sync contracts"),
+            "اللغة الشخصية للتطبيق" to Pair("Langue personnelle de l’application", "Personal app language"),
+            "اختر لغة واجهة التطبيق على هذا الجهاز. الاختيار محفوظ بشكل مستقل ولا يغيّر إعدادات بقية المستخدمين." to Pair("Choisissez la langue de l’application sur cet appareil. Ce choix est enregistré séparément et ne modifie pas les paramètres des autres utilisateurs.", "Choose the app language on this device. This preference is saved separately and does not change other users’ settings."),
+            "حفظ اللغة المختارة" to Pair("Enregistrer la langue choisie", "Save selected language"),
+            "إعدادات إضافية" to Pair("Paramètres supplémentaires", "Additional settings"),
+            "النسخ الاحتياطي واسترجاع البيانات" to Pair("Sauvegarde et restauration des données", "Backup and restore data"),
+            "إعدادات المزامنة" to Pair("Paramètres de synchronisation", "Sync settings"),
+            "حول التطبيق" to Pair("À propos de l’application", "About the app"),
+            "إغلاق" to Pair("Fermer", "Close"),
+            "تم حفظ تفضيل اللغة على هذا الجهاز." to Pair("La préférence linguistique a été enregistrée sur cet appareil.", "Language preference saved on this device.")
+        )
+        val pair = translations[value] ?: return value
+        return if (appLanguage == "fr") pair.first else pair.second
+    }
+
     private fun buildScreen() {
         val scroll = ScrollView(this)
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            layoutDirection = if (appLanguage == "ar") View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
             setPadding(dp(14), dp(12), dp(14), dp(22))
             setBackgroundColor(0xFFF1F6F5.toInt())
         }
@@ -228,7 +284,7 @@ class MainActivity : Activity() {
         reportsPage.addView(actionButton("استيراد نسخة احتياطية") { importBackup() }, matchWrap())
         reportsPage.addView(actionButton("عرض ملخص حسب نوع النفايات") { showTypeSummary() }, matchWrap())
         reportsPage.addView(TextView(this).apply {
-            text = "ملاحظة: تحفظ البيانات محليًا وتُزامَن مع حساب هنكل المشترك عند الاتصال. احتفظ بنسخة احتياطية دورية، ولا تشارك بيانات الدخول أو مفاتيح الإدارة."
+            text = tr("ملاحظة: تحفظ البيانات محليًا وتُزامَن مع حساب هنكل المشترك عند الاتصال. احتفظ بنسخة احتياطية دورية، ولا تشارك بيانات الدخول أو مفاتيح الإدارة.")
             textSize = 14f
             setTextColor(0xFF795500.toInt())
             setPadding(dp(12), dp(12), dp(12), dp(12))
@@ -244,12 +300,12 @@ class MainActivity : Activity() {
         pages["contracts"] = contractsPage
 
         settingsPage = newPage("الإعدادات")
-        settingsPage.addView(TextView(this).apply { text = "اللغة الشخصية للتطبيق"; textSize = 18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()) }, matchWrap())
-        settingsPage.addView(TextView(this).apply { text = "اختر لغة واجهة التطبيق على هذا الجهاز. الاختيار محفوظ بشكل مستقل ولا يغيّر إعدادات بقية المستخدمين."; textSize = 14f; setTextColor(0xFF526575.toInt()); setPadding(0, dp(6), 0, dp(10)) }, matchWrap())
+        settingsPage.addView(TextView(this).apply { text = tr("اللغة الشخصية للتطبيق"); textSize = 18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()) }, matchWrap())
+        settingsPage.addView(TextView(this).apply { text = tr("اختر لغة واجهة التطبيق على هذا الجهاز. الاختيار محفوظ بشكل مستقل ولا يغيّر إعدادات بقية المستخدمين."); textSize = 14f; setTextColor(0xFF526575.toInt()); setPadding(0, dp(6), 0, dp(10)) }, matchWrap())
         languageSpinner = spinner(settingsPage, listOf("العربية", "Français", "English"))
         languageSpinner.setSelection(when (appLanguage) { "fr" -> 1; "en" -> 2; else -> 0 })
         settingsPage.addView(actionButton("حفظ اللغة المختارة") { saveLanguagePreference() }, matchWrap())
-        settingsPage.addView(TextView(this).apply { text = "إعدادات إضافية"; textSize = 18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()); setPadding(0, dp(18), 0, dp(8)) }, matchWrap())
+        settingsPage.addView(TextView(this).apply { text = tr("إعدادات إضافية"); textSize = 18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()); setPadding(0, dp(18), 0, dp(8)) }, matchWrap())
         settingsPage.addView(actionButton("النسخ الاحتياطي واسترجاع البيانات") { backupData() }, matchWrap())
         settingsPage.addView(actionButton("إعدادات المزامنة") { showCloudDialog() }, matchWrap())
         settingsPage.addView(actionButton("حول التطبيق") { AlertDialog.Builder(this).setTitle("HENKEL ALGÉRIE – ZAKARY GRD").setMessage("نظام متابعة بيع النفايات الصناعية وإدارة العقود والتقارير.").setPositiveButton("إغلاق", null).show() }, matchWrap())
@@ -267,7 +323,7 @@ class MainActivity : Activity() {
             visibility = View.GONE
         }
         page.addView(TextView(this).apply {
-            text = title
+            text = tr(title)
             textSize = 23f
             setTypeface(null, Typeface.BOLD)
             setTextColor(0xFF173650.toInt())
@@ -278,7 +334,16 @@ class MainActivity : Activity() {
         return page
     }
 
-    private fun saveLanguagePreference() {\n        appLanguage = when (languageSpinner.selectedItemPosition) { 1 -> "fr"; 2 -> "en"; else -> "ar" }\n        getSharedPreferences("zakary_settings", MODE_PRIVATE).edit().putString("language", appLanguage).apply()\n        val direction = if (appLanguage == "ar") View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR\n        root.layoutDirection = direction\n        contentHost.layoutDirection = direction\n        Toast.makeText(this, "تم حفظ تفضيل اللغة على هذا الجهاز. ستُستكمل ترجمة جميع الشاشات في تحديث الترجمة.", Toast.LENGTH_LONG).show()\n    }\n\n    private fun showPage(name: String) {
+    private fun saveLanguagePreference() {
+        appLanguage = when (languageSpinner.selectedItemPosition) { 1 -> "fr"; 2 -> "en"; else -> "ar" }
+        getSharedPreferences("zakary_settings", MODE_PRIVATE).edit().putString("language", appLanguage).apply()
+        Toast.makeText(this, tr("تم حفظ تفضيل اللغة على هذا الجهاز."), Toast.LENGTH_LONG).show()
+        buildScreen()
+        renderRecords()
+        showPage("settings")
+    }
+
+    private fun showPage(name: String) {
         currentPage = name
         pages.values.forEach { it.visibility = if (it === pages[name]) View.VISIBLE else View.GONE }
         if (name == "dashboard") refreshDashboard()
@@ -290,7 +355,7 @@ class MainActivity : Activity() {
 
     private fun field(parent: LinearLayout, hintText: String, numeric: Boolean = false): EditText {
         val e = EditText(this).apply {
-            hint = hintText
+            hint = tr(hintText)
             textSize = 15f
             gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
@@ -318,7 +383,7 @@ class MainActivity : Activity() {
 
     private fun actionButton(label: String, action: () -> Unit): Button {
         return Button(this).apply {
-            text = label
+            text = tr(label)
             isAllCaps = false
             textSize = 15f
             setTextColor(if (label.contains("تصدير") || label.contains("حفظ العملية")) 0xFFFFFFFF.toInt() else 0xFF173650.toInt())
