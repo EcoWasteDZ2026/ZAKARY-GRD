@@ -461,15 +461,16 @@ class MainActivity : Activity() {
     private fun refreshDashboard() {
         if (!::dashboardStats.isInitialized) return
         dashboardStats.removeAllViews()
-        val unitGroups = records.groupBy { contractItem(it.type)?.unit ?: "وحدة" }
+        val sales = records.filter { it.operationType == "بيع مباشر" }
+        val unitGroups = sales.groupBy { contractItem(it.type)?.unit ?: "وحدة" }
         val total = unitGroups.entries.joinToString(" + ") { (unit, rows) -> "${fmt(rows.sumOf { it.quantity })} $unit" }.ifBlank { "0" }
-        val income = records.sumOf { it.income }
+        val income = sales.sumOf { it.income }
         dashboardStats.addView(metric("إجمالي الكميات المسجلة", total), matchWrap())
         dashboardStats.addView(metric("إجمالي مداخيل البيع", "${fmt(income)} دج"), matchWrap())
-        dashboardStats.addView(metric("عدد عمليات البيع", records.count { it.operationType == "بيع مباشر" }.toString()), matchWrap())
+        dashboardStats.addView(metric("عدد عمليات البيع", sales.size.toString()), matchWrap())
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), dp(12), dp(12), dp(12)); setBackgroundColor(0xFFFFFFFF.toInt()) }
         box.addView(TextView(this).apply { text="المداخيل حسب نوع النفايات"; textSize=18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()) }, matchWrap())
-        records.filter { it.operationType == "بيع مباشر" }.groupBy { it.type }.forEach { (type, rows) ->
+        sales.groupBy { it.type }.forEach { (type, rows) ->
             val q=rows.sumOf { it.quantity }; val money=rows.sumOf { it.income }; val unit=contractItem(type)?.unit ?: "وحدة"
             box.addView(TextView(this).apply { text="$type\nالكمية المباعة: ${fmt(q)} $unit\nمداخيل البيع: ${fmt(money)} دج"; textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(7),0,dp(7)) },matchWrap())
         }
@@ -590,7 +591,7 @@ class MainActivity : Activity() {
 
     private fun showTypeSummary() {
         val lines = types.mapNotNull { type ->
-            val subset = records.filter { it.type == type }
+            val subset = records.filter { it.type == type && it.operationType == "بيع مباشر" }
             if (subset.isEmpty()) null else { val unit = contractItem(type)?.unit ?: "وحدة"; val income = subset.sumOf { it.income }; "$type: الكمية المباعة ${fmt(subset.sumOf { it.quantity })} $unit، السعر ${fmt(contractItem(type)?.price ?: 0.0)} دج/$unit، المداخيل ${fmt(income)} دج" }
         }
         AlertDialog.Builder(this).setTitle("ملخص أنواع النفايات")
@@ -734,7 +735,7 @@ class MainActivity : Activity() {
     private fun shareCsv() {
         val csv = buildString {
             append("Date,Type,Department,Quantity,Unit,Unit_Price_DZD,Buyer,Quantity_Sold,Sales_Income_DZD,Dispatch_Reference,Invoice,Payment_Status,Notes\n")
-            records.forEach { r ->
+            records.filter { it.operationType == "بيع مباشر" }.forEach { r ->
                 append(listOf(r.date,r.type,r.department,fmt(r.quantity),contractItem(r.type)?.unit ?: "وحدة",fmt(contractItem(r.type)?.price ?: 0.0),r.buyerCompany,fmt(r.quantity),fmt(r.income),r.dispatchReference,r.invoiceNumber,r.paymentStatus,r.note)
                     .joinToString(",") { "\"" + it.replace("\"", "\"\"") + "\"" })
                 append("\n")
