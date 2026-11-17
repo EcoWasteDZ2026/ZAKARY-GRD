@@ -426,7 +426,7 @@ class MainActivity : Activity() {
             "Facture émise - non payée" to "فاتورة صادرة - غير مدفوع", "Invoice issued - unpaid" to "فاتورة صادرة - غير مدفوع",
             "Payé" to "مدفوع", "Paid" to "مدفوع", "En retard" to "متأخر", "Overdue" to "متأخر",
             "kg" to "كغ", "unité" to "وحدة", "unit" to "وحدة", "Selon quantité" to "حسب الكمية", "By quantity" to "حسب الكمية",
-            "Non vendable" to "غير قابل للبيع", "Not for sale" to "غير قابل للبيع"
+            "Non vendable" to "غير قابل للبيع", "Vente" to "بيع", "Sale" to "بيع", "Enlèvement gratuit" to "إزالة مجانية", "Free removal" to "إزالة مجانية", "Not for sale" to "غير قابل للبيع"
         )
         return reverse[value] ?: value
     }
