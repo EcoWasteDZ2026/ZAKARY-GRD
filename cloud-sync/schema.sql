@@ -80,3 +80,15 @@ alter table public.waste_records add column if not exists invoice_date date;
 alter table public.waste_records add column if not exists payment_status text not null default 'غير محدد';
 alter table public.waste_records add column if not exists payment_date date;
 alter table public.waste_records add column if not exists dispatch_reference text not null default '';
+
+
+-- Contract versioning and immutable price snapshots for accurate historical sales.
+alter table public.contract_items add column if not exists contract_reference text not null default 'NEW CONTRAT 2026';
+alter table public.waste_records add column if not exists contract_reference text not null default 'NEW CONTRAT 2026';
+alter table public.waste_records add column if not exists unit_price numeric(14,3) not null default 0 check(unit_price>=0);
+alter table public.waste_records add column if not exists sale_unit text not null default 'كغ';
+
+-- Allow the same waste type to appear in different contracts without overwriting prior terms.
+alter table public.contract_items drop constraint if exists contract_items_user_id_name_key;
+create unique index if not exists contract_items_user_contract_name_uq
+  on public.contract_items(user_id, contract_reference, name);
