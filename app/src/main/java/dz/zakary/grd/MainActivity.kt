@@ -240,6 +240,9 @@ class MainActivity : Activity() {
             "فشلت المزامنة: " to Pair("Échec de la synchronisation : ", "Sync failed: "),
             "حول التطبيق" to Pair("À propos", "About"),
             "العقد المعتمد لهذه العملية" to Pair("Contrat applicable à cette opération", "Contract applied to this sale"),
+            "تم حفظ تفضيل اللغة على هذا الجهاز." to Pair("Préférence linguistique enregistrée sur cet appareil.", "Language preference saved on this device."),
+            "المداخيل حسب نوع النفايات" to Pair("Revenus par type de déchet", "Revenue by waste type"),
+            "ملاحظات العقد: الفوترة في نهاية الشهر، والدفع خلال 10 أيام من استلام الفاتورة. أوقات الجمع المذكورة: الأحد إلى الخميس، 08:00–16:00. مدة العقد سنة قابلة للتجديد باتفاق الطرفين وملحق. لا تعتمد هذه الملخصات بدل العقد الأصلي الموقع." to Pair("Notes du contrat : facturation en fin de mois, paiement sous 10 jours après réception. Collecte du dimanche au jeudi, 08:00–16:00. Durée d’un an, renouvelable par accord et avenant. Le contrat signé reste la référence.", "Contract notes: month-end invoicing, payment within 10 days of receipt. Collection Sunday–Thursday, 08:00–16:00. One-year term, renewable by agreement and addendum. The signed contract remains authoritative."),
             "لا يمكن بيع هذا النوع دون بند بيع في العقد." to Pair("Ce déchet ne peut pas être vendu sans article de vente au contrat.", "This waste cannot be sold without a sales item in the contract."),
             "الشركة المشترية يجب أن تطابق الشركة المحددة في العقد." to Pair("L’acheteur doit correspondre à l’entreprise indiquée dans le contrat.", "The buyer must match the company specified in the contract."),
             "لا تغيّر سعر عقد موقع إلا بناءً على ملحق تعاقدي موقع. سيُحفظ سعر كل عملية بيع بتاريخها.\\n" to Pair("Ne modifiez le prix d’un contrat signé qu’au moyen d’un avenant signé. Le prix de chaque vente sera conservé à sa date.\\n", "Change a signed contract price only through a signed addendum. Each sale’s price will be preserved as of its transaction date.\\n"),
@@ -428,14 +431,14 @@ class MainActivity : Activity() {
             textSize = 23f
             setTypeface(null, Typeface.BOLD)
             setTextColor(0xFFFFFFFF.toInt())
-            gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
+            gravity = if (appLanguage == "ar") Gravity.RIGHT or Gravity.CENTER_VERTICAL else Gravity.LEFT or Gravity.CENTER_VERTICAL
             setPadding(dp(18), dp(17), dp(18), dp(17))
             setBackgroundColor(0xFF05090D.toInt())
         }
         root.addView(top, matchWrap())
         val hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            layoutDirection = if (appLanguage == "ar") View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
             setPadding(dp(18), dp(18), dp(18), dp(18))
             setBackgroundColor(0xFF173650.toInt())
         }
@@ -444,13 +447,13 @@ class MainActivity : Activity() {
             textSize = 20f
             setTypeface(null, Typeface.BOLD)
             setTextColor(0xFFFFFFFF.toInt())
-            gravity = Gravity.RIGHT
+            gravity = if (appLanguage == "ar") Gravity.RIGHT else Gravity.LEFT
         }, matchWrap())
         hero.addView(TextView(this).apply {
             text = tr("HENKEL MILA • العقود • التتبع • التثمين • التقارير")
             textSize = 14f
             setTextColor(0xFFD8F4EA.toInt())
-            gravity = Gravity.RIGHT
+            gravity = if (appLanguage == "ar") Gravity.RIGHT else Gravity.LEFT
             setPadding(0, dp(7), 0, 0)
         }, matchWrap())
         root.addView(hero, matchWrap())
@@ -459,7 +462,7 @@ class MainActivity : Activity() {
         root.addView(actionButton("⚙  الإعدادات واللغة") { showPage("settings") }, matchWrap())
 
         val navScroll = HorizontalScrollViewCompat(this)
-        val nav = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
+        val nav = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = if (appLanguage == "ar") View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR }
         navScroll.addView(nav)
         listOf(
             Triple("لوحة القيادة", "dashboard", "▦"),
@@ -482,7 +485,7 @@ class MainActivity : Activity() {
         }
         root.addView(navScroll, matchWrap())
 
-        contentHost = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
+        contentHost = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutDirection = if (appLanguage == "ar") View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR }
         root.addView(contentHost, matchWrap())
 
         dashboardPage = newPage("لوحة القيادة")
@@ -637,7 +640,7 @@ class MainActivity : Activity() {
         val e = EditText(this).apply {
             hint = tr(hintText)
             textSize = 15f
-            gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
+            gravity = if (appLanguage == "ar") Gravity.RIGHT or Gravity.CENTER_VERTICAL else Gravity.LEFT or Gravity.CENTER_VERTICAL
             layoutDirection = if (appLanguage == "ar") View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
             gravity = if (appLanguage == "ar") Gravity.RIGHT or Gravity.CENTER_VERTICAL else Gravity.LEFT or Gravity.CENTER_VERTICAL
             setPadding(dp(10), dp(4), dp(10), dp(4))
@@ -755,7 +758,7 @@ class MainActivity : Activity() {
         filtered.forEach { r ->
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                layoutDirection = View.LAYOUT_DIRECTION_RTL
+                layoutDirection = if (appLanguage == "ar") View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
                 setPadding(dp(13), dp(10), dp(13), dp(10))
                 setBackgroundColor(0xFFFFFFFF.toInt())
             }
@@ -772,7 +775,7 @@ class MainActivity : Activity() {
                 setTextColor(0xFF243746.toInt())
                 setPadding(0, dp(7), 0, dp(6))
             }, matchWrap())
-            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = View.LAYOUT_DIRECTION_RTL }
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutDirection = if (appLanguage == "ar") View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR }
             row.addView(actionButton("تعديل") { editRecord(r) }, LinearLayout.LayoutParams(0, dp(48), 1f))
             row.addView(actionButton("حذف") { confirmDelete(r) }, LinearLayout.LayoutParams(0, dp(48), 1f))
             card.addView(row, matchWrap())
@@ -836,7 +839,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
         dashboardStats.addView(metric(tr("إجمالي مداخيل البيع"), "${fmt(income)} دج"), matchWrap())
         dashboardStats.addView(metric(tr("عدد عمليات البيع"), sales.size.toString()), matchWrap())
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), dp(12), dp(12), dp(12)); setBackgroundColor(0xFFFFFFFF.toInt()) }
-        box.addView(TextView(this).apply { text="المداخيل حسب نوع النفايات"; textSize=18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()) }, matchWrap())
+        box.addView(TextView(this).apply { text=tr("المداخيل حسب نوع النفايات"); textSize=18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()) }, matchWrap())
         sales.groupBy { it.type }.forEach { (type, rows) ->
 val unit=rows.firstOrNull()?.saleUnit ?: "وحدة"
             box.addView(TextView(this).apply { text="$type\n${tr("الكمية المباعة: ")}${fmt(q)} $unit\n${tr("مداخيل البيع: ")}${fmt(money)} دج"; textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(7),0,dp(7)) },matchWrap())
@@ -875,7 +878,7 @@ val unit=rows.firstOrNull()?.saleUnit ?: "وحدة"
     }
 
     private fun metric(label: String, value: String): View {
-        val card = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutDirection = View.LAYOUT_DIRECTION_RTL; setPadding(dp(14), dp(12), dp(14), dp(12)); setBackgroundColor(0xFFFFFFFF.toInt()) }
+        val card = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutDirection = if (appLanguage == "ar") View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR; setPadding(dp(14), dp(12), dp(14), dp(12)); setBackgroundColor(0xFFFFFFFF.toInt()) }
         card.addView(TextView(this).apply { text=label; textSize=15f; setTextColor(0xFF687B89.toInt()) }, matchWrap())
         card.addView(TextView(this).apply { text=value; textSize=24f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF247A5A.toInt()); setPadding(0, dp(6), 0, 0) }, matchWrap())
         val p = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -922,7 +925,7 @@ val unit=rows.firstOrNull()?.saleUnit ?: "وحدة"
             box.addView(TextView(this).apply { text="${tr("الشركة: ")}${c.companyName.ifBlank { tr("غير محددة") }}\n"+(if(c.method=="غير قابل للبيع") tr("هذا النوع غير مدرج للبيع في العقد") else "${tr("السعر: ")}${fmt(c.price)} دج / ${c.unit}  •  ${tr("طريقة التعامل: ")}${tr(c.method)}"); textSize=14f; setTextColor(0xFF243746.toInt()); setPadding(0,dp(5),0,0) }, matchWrap())
             val p=LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT); p.bottomMargin=dp(8); contractsPage.addView(box,p)
         }
-        contractsPage.addView(TextView(this).apply { text="ملاحظات العقد: الفوترة في نهاية الشهر، والدفع خلال 10 أيام من استلام الفاتورة. أوقات الجمع المذكورة: الأحد إلى الخميس، 08:00–16:00. مدة العقد سنة قابلة للتجديد باتفاق الطرفين وملحق. لا تعتمد هذه الملخصات بدل العقد الأصلي الموقع."; textSize=13f; setTextColor(0xFF795500.toInt()); setPadding(dp(12),dp(12),dp(12),dp(12)); setBackgroundColor(0xFFFFF2CC.toInt()) }, matchWrap())
+        contractsPage.addView(TextView(this).apply { text=tr("ملاحظات العقد: الفوترة في نهاية الشهر، والدفع خلال 10 أيام من استلام الفاتورة. أوقات الجمع المذكورة: الأحد إلى الخميس، 08:00–16:00. مدة العقد سنة قابلة للتجديد باتفاق الطرفين وملحق. لا تعتمد هذه الملخصات بدل العقد الأصلي الموقع."); textSize=13f; setTextColor(0xFF795500.toInt()); setPadding(dp(12),dp(12),dp(12),dp(12)); setBackgroundColor(0xFFFFF2CC.toInt()) }, matchWrap())
     }
     private fun showContractManager() {
         val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(8), 0, dp(8), 0) }
