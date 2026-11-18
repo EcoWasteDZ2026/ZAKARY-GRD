@@ -16,6 +16,12 @@ import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import android.text.InputType
+import android.util.Base64
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.PBEKeySpec
+import java.security.MessageDigest
+import java.security.SecureRandom
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -86,10 +92,18 @@ class MainActivity : Activity() {
     private lateinit var destinationSpinner: Spinner
     private lateinit var searchInput: EditText
     private var currentPage = "dashboard"
+    private var appInitialized = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         appLanguage = getSharedPreferences("zakary_settings", MODE_PRIVATE).getString("language", "ar") ?: "ar"
+        val prefs = getSharedPreferences("zakary_security", MODE_PRIVATE)
+        if (prefs.getString("pin_hash", null).isNullOrBlank()) showPinSetup() else showPinLogin()
+    }
+
+    private fun initializeProtectedApp() {
+        if (appInitialized) return
+        appInitialized = true
         loadRecords()
         loadContracts()
         ensureHenkelFreeWasteItems()
@@ -97,7 +111,145 @@ class MainActivity : Activity() {
         buildScreen()
         renderRecords()
         showPage("dashboard")
+        // Cloud synchronization remains optional; the app and PIN work offline.
         if (cloud.connected()) syncCloud(false)
+    }
+
+    private fun pinInput(hintText: String): EditText = EditText(this).apply {
+        hint = tr(hintText)
+        inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
+        textSize = 18f
+        maxLines = 1
+    }
+
+    private fun derivePinHash(pin: String, salt: ByteArray): ByteArray {
+        val spec = PBEKeySpec(pin.toCharArray(), salt, 120_000, 256)
+        return try {
+            SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1").generateSecret(spec).encoded
+        } finally {
+            spec.clearPassword()
+        }
+    }
+
+    private fun saveNewPin(pin: String) {
+        val salt = ByteArray(16).also { SecureRandom().nextBytes(it) }
+        val hash = derivePinHash(pin, salt)
+        getSharedPreferences("zakary_security", MODE_PRIVATE).edit()
+            .putString("pin_salt", Base64.encodeToString(salt, Base64.NO_WRAP))
+            .putString("pin_hash", Base64.encodeToString(hash, Base64.NO_WRAP))
+            .apply()
+    }
+
+    private fun verifyPin(pin: String): Boolean {
+        val prefs = getSharedPreferences("zakary_security", MODE_PRIVATE)
+        val saltText = prefs.getString("pin_salt", null) ?: return false
+        val hashText = prefs.getString("pin_hash", null) ?: return false
+        return try {
+            val salt = Base64.decode(saltText, Base64.NO_WRAP)
+            val expected = Base64.decode(hashText, Base64.NO_WRAP)
+            MessageDigest.isEqual(expected, derivePinHash(pin, salt))
+        } catch (_: Exception) { false }
+    }
+
+    private fun showPinSetup() {
+        val first = pinInput("أنشئ رمزاً سرياً من 6 أرقام على الأقل")
+        val second = pinInput("أعد كتابة الرمز للتأكيد")
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(22), dp(8), dp(22), dp(4))
+            addView(first, matchWrap())
+            addView(second, matchWrap())
+        }
+        AlertDialog.Builder(this)
+            .setTitle(tr("إنشاء رمز حماية التطبيق"))
+            .setMessage(tr("أنشئ رمزاً خاصاً بك. سيُحفظ مشفّراً محلياً، ولا يحتاج التطبيق إلى الإنترنت للتحقق منه."))
+            .setView(box)
+            .setCancelable(false)
+            .setPositiveButton(tr("حفظ الرمز"), null)
+            .create().also { dialog ->
+                dialog.setOnShowListener {
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                        val a = first.text.toString()
+                        val b = second.text.toString()
+                        if (a.length < 6 || a.any { !it.isDigit() }) {
+                            first.error = tr("استخدم 6 أرقام على الأقل")
+                        } else if (a != b) {
+                            second.error = tr("الرمزان غير متطابقين")
+                        } else {
+                            saveNewPin(a)
+                            dialog.dismiss()
+                            initializeProtectedApp()
+                        }
+                    }
+                }
+                dialog.show()
+            }
+    }
+
+    private fun showPinLogin() {
+        val input = pinInput("أدخل رمز الحماية")
+        var attempts = 0
+        AlertDialog.Builder(this)
+            .setTitle(tr("ZAKARY GRD – دخول محمي"))
+            .setMessage(tr("أدخل رمزك السري لفتح التطبيق."))
+            .setView(input)
+            .setCancelable(false)
+            .setPositiveButton(tr("دخول"), null)
+            .create().also { dialog ->
+                dialog.setOnShowListener {
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                        if (verifyPin(input.text.toString())) {
+                            dialog.dismiss()
+                            initializeProtectedApp()
+                        } else {
+                            attempts++
+                            input.text.clear()
+                            input.error = tr("رمز غير صحيح")
+                            if (attempts >= 5) {
+                                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
+                                Toast.makeText(this, tr("تم إيقاف المحاولات مؤقتاً. أغلق التطبيق وأعد فتحه لاحقاً."), Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                }
+                dialog.show()
+            }
+    }
+
+    private fun changeAppPin() {
+        val oldPin = pinInput("أدخل الرمز الحالي")
+        val newPin = pinInput("أدخل الرمز الجديد – 6 أرقام على الأقل")
+        val confirmPin = pinInput("أكد الرمز الجديد")
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(22), dp(8), dp(22), dp(4))
+            addView(oldPin, matchWrap())
+            addView(newPin, matchWrap())
+            addView(confirmPin, matchWrap())
+        }
+        AlertDialog.Builder(this)
+            .setTitle(tr("تغيير رمز حماية التطبيق"))
+            .setView(box)
+            .setNegativeButton(tr("إلغاء"), null)
+            .setPositiveButton(tr("حفظ"), null)
+            .create().also { dialog ->
+                dialog.setOnShowListener {
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                        val fresh = newPin.text.toString()
+                        when {
+                            !verifyPin(oldPin.text.toString()) -> oldPin.error = tr("الرمز الحالي غير صحيح")
+                            fresh.length < 6 || fresh.any { !it.isDigit() } -> newPin.error = tr("استخدم 6 أرقام على الأقل")
+                            fresh != confirmPin.text.toString() -> confirmPin.error = tr("الرمزان غير متطابقين")
+                            else -> {
+                                saveNewPin(fresh)
+                                dialog.dismiss()
+                                Toast.makeText(this, tr("تم تغيير رمز الحماية بنجاح"), Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                }
+                dialog.show()
+            }
     }
 
     private fun tr(value: String): String {
@@ -672,6 +824,7 @@ class MainActivity : Activity() {
         languageSpinner = spinner(settingsPage, listOf("العربية", "Français", "English"))
         languageSpinner.setSelection(when (appLanguage) { "fr" -> 1; "en" -> 2; else -> 0 })
         settingsPage.addView(actionButton("حفظ اللغة المختارة") { saveLanguagePreference() }, matchWrap())
+        settingsPage.addView(actionButton("تغيير رمز حماية التطبيق") { changeAppPin() }, matchWrap())
         settingsPage.addView(TextView(this).apply { text = tr("إعدادات إضافية"); textSize = 18f; setTypeface(null, Typeface.BOLD); setTextColor(0xFF173650.toInt()); setPadding(0, dp(18), 0, dp(8)) }, matchWrap())
         settingsPage.addView(actionButton("النسخ الاحتياطي واسترجاع البيانات") { backupData() }, matchWrap())
         settingsPage.addView(actionButton("إعدادات المزامنة") { showCloudDialog() }, matchWrap())
