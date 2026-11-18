@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - henkel-apk-build
+      - nov17-henkel-correction
     paths-ignore:
       - 'docs/download/**'
 
