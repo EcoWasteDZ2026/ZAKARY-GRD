@@ -1371,10 +1371,25 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
     }
 
     private fun backupData() {
+        val envelope = JSONObject().apply {
+            put("app", "ZAKARY GRD")
+            put("schemaVersion", 2)
+            put("exportedAt", SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date()))
+            put("records", toJson())
+            put("contracts", JSONArray().apply {
+                contractItems.forEach { c -> put(JSONObject().apply {
+                    put("name", c.name); put("price", c.price); put("unit", c.unit); put("method", c.method)
+                    put("companyName", c.companyName); put("reference", c.contractReference); put("effectiveDate", c.effectiveDate)
+                }) }
+            })
+            put("activeContractReference", activeContractReference)
+            put("activeContractCompany", activeContractCompany)
+            put("activeContractEffectiveDate", activeContractEffectiveDate)
+        }
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "application/json"
             putExtra(Intent.EXTRA_SUBJECT, tr("ZAKARY GRD - نسخة احتياطية"))
-            putExtra(Intent.EXTRA_TEXT, toJson().toString())
+            putExtra(Intent.EXTRA_TEXT, envelope.toString(2))
         }
         startActivity(Intent.createChooser(send, tr("حفظ أو مشاركة النسخة الاحتياطية")))
     }
@@ -1382,21 +1397,40 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
     private fun importBackup() {
         val input = EditText(this).apply { hint=tr("الصق محتوى JSON للنسخة الاحتياطية"); minLines=5; gravity=Gravity.TOP or if (appLanguage == "ar") Gravity.RIGHT else Gravity.LEFT }
         AlertDialog.Builder(this).setTitle(tr("استيراد نسخة احتياطية"))
-            .setMessage(tr("انسخ محتوى النسخة الاحتياطية والصقه هنا. ستتم إضافة السجلات الجديدة دون تكرار المعرفات."))
+            .setMessage(tr("يمكن استيراد النسخ القديمة (قائمة سجلات) أو النسخة الموحدة الجديدة التي تحتوي السجلات والعقود. ستتم إضافة السجلات الجديدة دون تكرار المعرفات."))
             .setView(input).setNegativeButton(tr("إلغاء"), null)
             .setPositiveButton(tr("استيراد")) { _, _ ->
                 try {
-                    val a = JSONArray(input.text.toString().trim())
+                    val raw = input.text.toString().trim()
+                    val root = if (raw.startsWith("{")) JSONObject(raw) else null
+                    val a = if (root != null) root.optJSONArray("records") ?: JSONArray() else JSONArray(raw)
                     var added = 0
                     for (i in 0 until a.length()) {
                         val o = a.getJSONObject(i)
                         val id = normalizeId(o.optString("id", ""))
-                        if (records.none { it.id == id }) {
-                            records.add(readRecord(o, id)); added++
+                        if (records.none { it.id == id }) { records.add(readRecord(o, id)); added++ }
+                    }
+                    var contractCount = 0
+                    val incomingContracts = root?.optJSONArray("contracts")
+                    if (incomingContracts != null) {
+                        for (i in 0 until incomingContracts.length()) {
+                            val o = incomingContracts.getJSONObject(i)
+                            val item = ContractItem(o.optString("name"), o.optDouble("price"), o.optString("unit", "كغ"),
+                                o.optString("method", if (o.optDouble("price") == 0.0) "إزالة مجانية" else "بيع"),
+                                o.optString("companyName"), o.optString("reference", o.optString("contractReference", "NEW CONTRAT 2026")),
+                                o.optString("effectiveDate", "2026-08-08"))
+                            val index = contractItems.indexOfFirst { it.name == item.name && it.contractReference == item.contractReference && it.companyName == item.companyName }
+                            if (index >= 0) contractItems[index] = item else contractItems.add(item)
+                            contractCount++
                         }
+                        activeContractReference = root.optString("activeContractReference", activeContractReference)
+                        activeContractCompany = root.optString("activeContractCompany", activeContractCompany)
+                        activeContractEffectiveDate = root.optString("activeContractEffectiveDate", activeContractEffectiveDate)
+                        persistContracts()
                     }
                     persistRecords(); renderRecords(); refreshDashboard(); refreshFinance()
-                    Toast.makeText(this, tr("تم استيراد ") + added + tr(" سجل"), Toast.LENGTH_LONG).show()
+                    if (::contractsPage.isInitialized) refreshContracts()
+                    Toast.makeText(this, tr("تم استيراد ") + added + tr(" سجل") + " • " + contractCount + " " + tr("بند عقد"), Toast.LENGTH_LONG).show()
                 } catch (_: Exception) {
                     Toast.makeText(this, tr("تعذر قراءة النسخة. تأكد من نسخ JSON كاملًا."), Toast.LENGTH_LONG).show()
                 }
