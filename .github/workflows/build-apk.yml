@@ -1,5 +1,5 @@
 name: Build HENKEL ZAKARY GRD APK
-# Rebuild requested after sales-only, per-waste pricing, and separate Henkel package ID updates
+# Rebuild requested after JavaScript startup and offline sync syntax fix
 
 on:
   workflow_dispatch:
