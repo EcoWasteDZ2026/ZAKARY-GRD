@@ -1,6 +1,6 @@
 const $=id=>document.getElementById(id);let base=localStorage.getItem('hz_url')||'',key=localStorage.getItem('hz_key')||'',token='',user=null,records=[],contracts=[];
 const seed=[['صناديق كرتونية ونفايات الورق',2.4,'كغ','بيع','SNC Groupe EL BADISSIA'],['أغلفة وأفلام بلاستيكية',5.4,'كغ','بيع','SNC Groupe EL BADISSIA'],['أكياس Big Bags',4.8,'كغ','بيع','SNC Groupe EL BADISSIA'],['براميل معدنية',216,'وحدة','بيع','SNC Groupe EL BADISSIA'],['منصات خشبية وبقايا الخشب',2.5,'كغ','بيع','SNC Groupe EL BADISSIA'],['أكياس وأغلفة PE ملوثة بالمنظفات وغير قابلة للاسترجاع',0,'حسب الكمية','غير قابل للبيع','']];
-const n=id=>Number($(id).value||0),f=x=>Number(x||0).toLocaleString('fr-FR',{maximumFractionDigits:2}),uid=()=>crypto.randomUUID?uid():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});
+const n=id=>Number($(id).value||0),f=x=>Number(x||0).toLocaleString('fr-FR',{maximumFractionDigits:2}),uid=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});
 function status(t,ok=false){$('syncState').textContent=t;$('syncState').className=ok?'muted ok':'muted'}
 function show(id){['setup','auth','app'].forEach(x=>$(x).classList.toggle('hidden',x!==id))}
 function headers(){return {'apikey':key,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':'return=representation'}}
