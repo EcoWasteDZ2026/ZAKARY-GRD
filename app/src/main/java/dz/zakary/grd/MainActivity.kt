@@ -109,6 +109,32 @@ class MainActivity : Activity() {
             "مداخيل البيع" to Pair("Revenus des ventes", "Sales revenue"),
             "التقارير والنسخ" to Pair("Rapports et sauvegardes", "Reports & backups"),
             "العقود والأسعار" to Pair("Contrats et tarifs", "Contracts & prices"),
+            "نطاق النفايات المعتمد للموقع – 2026" to Pair("Périmètre des déchets du site – 2026", "Site waste scope – 2026"),
+            "نفايات الإنتاج" to Pair("Déchets de production", "Production Waste"),
+            "مواد أعيد استخدامها" to Pair("Matériaux réutilisés", "Reuse material"),
+            "مواد لإعادة التدوير الخارجي عالي الجودة" to Pair("Matières pour recyclage externe de haute qualité", "High-Quality Outbound Recycling"),
+            "نفايات البناء" to Pair("Déchets de construction", "Construction waste"),
+            "النفايات البلدية" to Pair("Déchets municipaux", "Municipal Waste"),
+            "منتجات قديمة – غير إنتاجية" to Pair("Produits obsolètes – hors production", "Obsolete - Non-Production"),
+            "نطاق الموقع: 2026" to Pair("Périmètre du site : 2026", "Site scope: 2026"),
+            "نفايات مرتبطة بالمياه المستعملة: غير محددة في الصورة" to Pair("Déchets liés aux eaux usées : non sélectionnés sur la capture", "Wastewater related Waste: unchecked in screenshot"),
+            "طبيعة المادة: Wood" to Pair("Nature du matériau : Bois", "Material: Wood"),
+            "خطرة؟ No" to Pair("Dangereux ? Non", "Hazardous? No"),
+            "طريقة التعامل: Reused material" to Pair("Destination : Matériau réutilisé", "Destination: Reused material"),
+            "طبيعة المادة: Paper and Cardboard" to Pair("Nature du matériau : Papier et carton", "Material: Paper and Cardboard"),
+            "طريقة التعامل: High-Quality Outbound Recycling" to Pair("Destination : Recyclage externe de haute qualité", "Destination: High-Quality Outbound Recycling"),
+            "معلومة إضافية: No" to Pair("Information supplémentaire : Non", "Additional information: No"),
+            "طبيعة المادة: Concrete, bricks, tiles and ceramics" to Pair("Nature : Béton, briques, tuiles et céramiques", "Material: Concrete, bricks, tiles and ceramics"),
+            "طريقة التعامل: Landfill" to Pair("Destination : Mise en décharge", "Destination: Landfill"),
+            "طبيعة المادة: Metals (and their alloys)" to Pair("Nature : Métaux (et leurs alliages)", "Material: Metals (and their alloys)"),
+            "طريقة التعامل: Recycling" to Pair("Destination : Recyclage", "Destination: Recycling"),
+            "خطرة؟ Yes" to Pair("Dangereux ? Oui", "Hazardous? Yes"),
+            "طبيعة المادة: Chemical Waste" to Pair("Nature du matériau : Déchets chimiques", "Material: Chemical Waste"),
+            "طريقة التعامل: Incineration with energy recovery" to Pair("Destination : Incinération avec récupération d'énergie", "Destination: Incineration with energy recovery"),
+            "طريقة التعامل: Other recovery" to Pair("Destination : Autre valorisation", "Destination: Other recovery"),
+            "طبيعة المادة: Plastic Waste" to Pair("Nature du matériau : Déchets plastiques", "Material: Plastic Waste"),
+            "طبيعة المادة: Mixed/Contaminated Packaging" to Pair("Nature : Emballage mixte/contaminé", "Material: Mixed/Contaminated Packaging"),
+            "تظهر هذه البيانات وفق الصور المرسلة فقط." to Pair("Ces données reflètent uniquement les captures envoyées.", "This data reflects only the screenshots provided."),
             "الإعدادات" to Pair("Paramètres", "Settings"),
             "SFERA – سفيرا" to Pair("SFERA", "SFERA"),
             "هذا القسم مخصص لتوثيق وعرض محتويات نظام SFERA المستخدم في مصنع هنكل." to Pair("Cette section est dédiée à la documentation et à la présentation du système SFERA utilisé dans l’usine Henkel.", "This section is dedicated to documenting and presenting the SFERA system used at the Henkel plant."),
@@ -653,22 +679,62 @@ class MainActivity : Activity() {
         pages["settings"] = settingsPage
 
         sferaPage = newPage("SFERA – سفيرا")
-        sferaPage.addView(TextView(this).apply {
-            text = tr("هذا القسم مخصص لتوثيق وعرض محتويات نظام SFERA المستخدم في مصنع هنكل.")
-            textSize = 16f
-            setTextColor(0xFF526575.toInt())
-            gravity = if (appLanguage == "ar") Gravity.RIGHT else Gravity.LEFT
-            setPadding(dp(12), dp(12), dp(12), dp(12))
-            setBackgroundColor(0xFFFFFFFF.toInt())
-        }, matchWrap())
-        sferaPage.addView(TextView(this).apply {
-            text = tr("لم تتم إضافة وحدات النظام أو إجراءاته بعد. ستظهر هنا بعد مراجعة الصور والمعلومات التي سترسلها، دون افتراض أي وظيفة غير موثقة.")
-            textSize = 14f
-            setTextColor(0xFF795500.toInt())
-            gravity = if (appLanguage == "ar") Gravity.RIGHT else Gravity.LEFT
-            setPadding(dp(12), dp(12), dp(12), dp(12))
-            setBackgroundColor(0xFFFFF2CC.toInt())
-        }, matchWrap())
+        fun sferaText(value: String, size: Float = 14f, bold: Boolean = false, bg: Int = 0xFFFFFFFF.toInt()): TextView =
+            TextView(this).apply {
+                text = tr(value)
+                textSize = size
+                setTextColor(0xFF263746.toInt())
+                if (bold) setTypeface(null, android.graphics.Typeface.BOLD)
+                gravity = if (appLanguage == "ar") Gravity.RIGHT else Gravity.LEFT
+                setPadding(dp(12), dp(10), dp(12), dp(10))
+                setBackgroundColor(bg)
+            }
+        fun sferaSection(title: String, rows: List<List<String>>) {
+            val heading = sferaText(title, 16f, true, 0xFFE7EDF5.toInt())
+            heading.setOnClickListener {
+                val collapse = (heading.tag as? Boolean) != true
+                heading.tag = collapse
+                for (i in 0 until sferaPage.childCount) {
+                    val child = sferaPage.getChildAt(i)
+                    if (child.tag == title) child.visibility = if (collapse) View.GONE else View.VISIBLE
+                }
+            }
+            sferaPage.addView(heading, matchWrap())
+            rows.forEach { row ->
+                sferaPage.addView(TextView(this).apply {
+                    text = row.joinToString("\\n") { tr(it) }
+                    textSize = 13f
+                    setTextColor(0xFF34495E.toInt())
+                    gravity = if (appLanguage == "ar") Gravity.RIGHT else Gravity.LEFT
+                    setPadding(dp(14), dp(9), dp(14), dp(9))
+                    setBackgroundColor(0xFFFFFFFF.toInt())
+                    tag = title
+                }, matchWrap())
+            }
+        }
+        sferaPage.addView(sferaText("SFERA – مرجع تصنيف النفايات", 19f, true), matchWrap())
+        sferaPage.addView(sferaText("تُعرض البيانات كما ظهرت في الصور، وقد تُستكمل عند إرسال بقية الشاشات.", 13f, false, 0xFFFFF4D6.toInt()), matchWrap())
+        sferaPage.addView(sferaText("نطاق النفايات المعتمد للموقع – 2026", 16f, true, 0xFFE7EDF5.toInt()), matchWrap())
+        sferaPage.addView(sferaText("نطاق الموقع: 2026", 13f), matchWrap())
+        sferaPage.addView(sferaText("Production Waste • Obsolete - Non-Production • Municipal Waste • Construction Waste", 13f), matchWrap())
+        sferaPage.addView(sferaText("نفايات مرتبطة بالمياه المستعملة: غير محددة في الصورة", 13f), matchWrap())
+        sferaSection("مواد أعيد استخدامها", listOf(listOf("Pallet conforme", "طبيعة المادة: Wood", "خطرة؟ No", "طريقة التعامل: Reused material")))
+        sferaSection("مواد لإعادة التدوير الخارجي عالي الجودة", listOf(listOf("Carton", "طبيعة المادة: Paper and Cardboard", "خطرة؟ No", "طريقة التعامل: High-Quality Outbound Recycling", "معلومة إضافية: No")))
+        sferaSection("نفايات البناء", listOf(
+            listOf("Construction waste", "طبيعة المادة: Concrete, bricks, tiles and ceramics", "خطرة؟ No", "طريقة التعامل: Landfill", "معلومة إضافية: No"),
+            listOf("Metallic Waste", "طبيعة المادة: Metals (and their alloys)", "خطرة؟ No", "طريقة التعامل: Recycling", "معلومة إضافية: No")
+        ))
+        sferaSection("النفايات البلدية", listOf(listOf("Canteen Waste", "خطرة؟ No", "طريقة التعامل: Other recovery", "معلومة إضافية: No", "NA")))
+        sferaSection("منتجات قديمة – غير إنتاجية", listOf(listOf("Old Product", "طبيعة المادة: Chemical Waste", "خطرة؟ Yes", "طريقة التعامل: Incineration with energy recovery", "NA")))
+        sferaSection("نفايات الإنتاج", listOf(
+            listOf("Packaging Film", "طبيعة المادة: Plastic Waste", "طريقة التعامل: Recycling"),
+            listOf("Plastic Big Bag", "طبيعة المادة: Plastic Waste", "طريقة التعامل: Recycling"),
+            listOf("Metal Barrel", "طبيعة المادة: Mixed/Contaminated Packaging", "طريقة التعامل: Incineration with energy recovery"),
+            listOf("Wood Pallet Waste", "طبيعة المادة: Wood", "طريقة التعامل: Recycling"),
+            listOf("laboratory waste", "طبيعة المادة: Chemical Waste", "طريقة التعامل: Incineration with energy recovery"),
+            listOf("Contaminated PPE waste", "طبيعة المادة: Chemical Waste", "طريقة التعامل: Incineration with energy recovery")
+        ))
+        sferaPage.addView(sferaText("تظهر هذه البيانات وفق الصور المرسلة فقط.", 12f, false, 0xFFF1F5F9.toInt()), matchWrap())
         pages["sfera"] = sferaPage
 
         refreshDashboard()
