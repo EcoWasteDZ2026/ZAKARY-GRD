@@ -4,7 +4,7 @@
     <application
         android:allowBackup="false"
         android:label="HENKEL ALGÉRIE • ZAKARY GRD"
-        android:icon="@drawable/henkel_launcher"
+        android:icon="@drawable/ic_zakary_grd"
         android:roundIcon="@drawable/henkel_launcher"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
