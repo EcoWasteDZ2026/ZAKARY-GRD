@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         // Separate package so this Henkel edition installs alongside the older ZAKARY GRD app.
-        applicationId = "dz.zakary.grd"
+        applicationId = "dz.zakary.grd.henkel"
         minSdk = 23
         targetSdk = 35
         versionCode = 2
