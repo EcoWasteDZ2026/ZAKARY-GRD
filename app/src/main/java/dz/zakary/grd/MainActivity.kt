@@ -16,6 +16,9 @@ import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.webkit.WebChromeClient
 import android.text.InputType
 import android.util.Base64
 import javax.crypto.SecretKeyFactory
@@ -104,15 +107,47 @@ class MainActivity : Activity() {
     private fun initializeProtectedApp() {
         if (appInitialized) return
         appInitialized = true
+        // Preserve existing local records/contracts for migration into the shared interface.
         loadRecords()
         loadContracts()
         ensureHenkelFreeWasteItems()
-        restoreProduction()
-        buildScreen()
-        renderRecords()
-        showPage("dashboard")
-        // Cloud synchronization remains optional; the app and PIN work offline.
-        if (cloud.connected()) syncCloud(false)
+        val sharedUi = WebView(this).apply {
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            settings.databaseEnabled = true
+            settings.allowFileAccess = true
+            settings.allowContentAccess = true
+            settings.javaScriptCanOpenWindowsAutomatically = false
+            webViewClient = WebViewClient()
+            webChromeClient = WebChromeClient()
+            setBackgroundColor(android.graphics.Color.rgb(239, 245, 242))
+        }
+        setContentView(sharedUi)
+        val backup = JSONObject().apply {
+            put("app", "ZAKARY GRD")
+            put("schemaVersion", 2)
+            put("records", toJson())
+            put("contracts", JSONArray().apply {
+                contractItems.forEach { c ->
+                    put(JSONObject().apply {
+                        put("name", c.name)
+                        put("price", c.price)
+                        put("unit", c.unit)
+                        put("method", c.method)
+                        put("companyName", c.companyName)
+                        put("reference", c.contractReference)
+                        put("effectiveDate", c.effectiveDate)
+                    })
+                }
+            })
+        }
+        val encoded = Base64.encodeToString(backup.toString().toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+        sharedUi.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView, url: String) {
+                view.evaluateJavascript("try{localStorage.setItem('zakary_native_backup_pending',atob('$encoded'));}catch(e){}", null)
+            }
+        }
+        sharedUi.loadUrl("file:///android_asset/zakary/index.html")
     }
 
     private fun pinInput(hintText: String): EditText = EditText(this).apply {
