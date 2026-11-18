@@ -62,6 +62,7 @@ class MainActivity : Activity() {
     private lateinit var reportsPage: LinearLayout
     private lateinit var contractsPage: LinearLayout
     private lateinit var settingsPage: LinearLayout
+    private lateinit var sferaPage: LinearLayout
     private lateinit var languageSpinner: Spinner
     private lateinit var contractSpinner: Spinner
     private var appLanguage: String = "ar"
@@ -108,6 +109,9 @@ class MainActivity : Activity() {
             "التقارير والنسخ" to Pair("Rapports et sauvegardes", "Reports & backups"),
             "العقود والأسعار" to Pair("Contrats et tarifs", "Contracts & prices"),
             "الإعدادات" to Pair("Paramètres", "Settings"),
+            "SFERA – سفيرا" to Pair("SFERA", "SFERA"),
+            "هذا القسم مخصص لتوثيق وعرض محتويات نظام SFERA المستخدم في مصنع هنكل." to Pair("Cette section est dédiée à la documentation et à la présentation du système SFERA utilisé dans l’usine Henkel.", "This section is dedicated to documenting and presenting the SFERA system used at the Henkel plant."),
+            "لم تتم إضافة وحدات النظام أو إجراءاته بعد. ستظهر هنا بعد مراجعة الصور والمعلومات التي سترسلها، دون افتراض أي وظيفة غير موثقة." to Pair("Les modules et procédures du système ne sont pas encore ajoutés. Ils apparaîtront ici après examen des images et informations que vous enverrez, sans supposer de fonctions non documentées.", "System modules and procedures have not been added yet. They will appear here after reviewing the screenshots and information you send, without assuming undocumented functions.")
             "نظام تسيير واسترجاع النفايات الصناعية — مصنع هنكل، ولاية ميلة" to Pair("Système de gestion et de valorisation des déchets industriels — usine Henkel, Mila", "Industrial waste management system — Henkel plant, Mila"),
             "HENKEL MILA • العقود • التتبع • التثمين • التقارير" to Pair("HENKEL MILA • Contrats • Suivi • Valorisation • Rapports", "HENKEL MILA • Contracts • Tracking • Sales • Reports"),
             "＋ تسجيل نفايات جديدة" to Pair("＋ Enregistrer un déchet", "＋ Record new waste"),
@@ -521,7 +525,8 @@ class MainActivity : Activity() {
             Triple("مداخيل البيع", "finance", "دج"),
             Triple("التقارير والنسخ", "reports", "⇩"),
             Triple("العقود والأسعار", "contracts", "§"),
-            Triple("الإعدادات", "settings", "⚙")
+            Triple("الإعدادات", "settings", "⚙"),
+            Triple("SFERA – سفيرا", "sfera", "S")
         ).forEach { item ->
             val b = Button(this).apply {
                 text = "${item.third}  ${tr(item.first)}"
@@ -645,6 +650,25 @@ class MainActivity : Activity() {
         settingsPage.addView(actionButton("إعدادات المزامنة") { showCloudDialog() }, matchWrap())
         settingsPage.addView(actionButton("حول التطبيق") { AlertDialog.Builder(this).setTitle("HENKEL ALGÉRIE – ZAKARY GRD").setMessage(tr("نظام متابعة بيع النفايات الصناعية وإدارة العقود والتقارير.")).setPositiveButton(tr("إغلاق"), null).show() }, matchWrap())
         pages["settings"] = settingsPage
+
+        sferaPage = newPage("SFERA – سفيرا")
+        sferaPage.addView(TextView(this).apply {
+            text = tr("هذا القسم مخصص لتوثيق وعرض محتويات نظام SFERA المستخدم في مصنع هنكل.")
+            textSize = 16f
+            setTextColor(0xFF526575.toInt())
+            gravity = if (appLanguage == "ar") Gravity.RIGHT else Gravity.LEFT
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setBackgroundColor(0xFFFFFFFF.toInt())
+        }, matchWrap())
+        sferaPage.addView(TextView(this).apply {
+            text = tr("لم تتم إضافة وحدات النظام أو إجراءاته بعد. ستظهر هنا بعد مراجعة الصور والمعلومات التي سترسلها، دون افتراض أي وظيفة غير موثقة.")
+            textSize = 14f
+            setTextColor(0xFF795500.toInt())
+            gravity = if (appLanguage == "ar") Gravity.RIGHT else Gravity.LEFT
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setBackgroundColor(0xFFFFF2CC.toInt())
+        }, matchWrap())
+        pages["sfera"] = sferaPage
 
         refreshDashboard()
         refreshFinance()
