@@ -1,4 +1,4 @@
-const $=id=>document.getElementById(id);let base=localStorage.getItem('hz_url')||'',key=localStorage.getItem('hz_key')||'',token='',user=null,records=[],contracts=[];
+const $=id=>document.getElementById(id);let base=localStorage.getItem('hz_url')||'',key=localStorage.getItem('hz_key')||'',token='',user=null,records=[],contracts=[],ownerControl=null;const APP_VERSION_CODE=1,APP_VERSION_NAME='1.0.0';
 const seed=[['صناديق كرتونية ونفايات الورق',2.4,'كغ','بيع','SNC Groupe EL BADISSIA'],['أغلفة وأفلام بلاستيكية',5.4,'كغ','بيع','SNC Groupe EL BADISSIA'],['أكياس Big Bags',4.8,'كغ','بيع','SNC Groupe EL BADISSIA'],['براميل معدنية',216,'وحدة','بيع','SNC Groupe EL BADISSIA'],['منصات خشبية وبقايا الخشب',2.5,'كغ','بيع','SNC Groupe EL BADISSIA'],['أكياس وأغلفة PE ملوثة بالمنظفات وغير قابلة للاسترجاع',0,'حسب الكمية','غير قابل للبيع','']];
 const n=id=>Number($(id).value||0),f=x=>Number(x||0).toLocaleString('fr-FR',{maximumFractionDigits:2});
 function status(t,ok=false){$('syncState').textContent=t;$('syncState').className=ok?'muted ok':'muted'}
@@ -8,7 +8,48 @@ async function api(path,opts={}){const r=await fetch(base+'/rest/v1/'+path,{...o
 async function auth(path,body){const r=await fetch(base+'/auth/v1/'+path,{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw Error(d.msg||d.message||d.error_description||'تعذر الدخول');return d}
 function defaults(){return new Date().toISOString().slice(0,10)}
 async function init(){if(!base||!key){show('setup');return}try{const s=JSON.parse(localStorage.getItem('hz_session')||'null');if(s&&s.access_token&&s.expires_at>Date.now()/1000){token=s.access_token;user=s.user;await loadAll();return}}catch(e){}show('auth')}
-async function loadAll(){show('app');$('who').textContent=user?.email||'حساب موثق';$('month').value=new Date().toISOString().slice(0,7);$('date').value=defaults();try{await refresh();if(navigator.onLine){await ensureContracts();await refresh();await migrateNativePending();await flushQueue();await refresh();status('متصل — تمت المزامنة',true)}else{restoreCache();migrateNativePending();status('وضع دون إنترنت — ستُرسل التغييرات عند عودة الاتصال')}}catch(e){restoreCache();migrateNativePending();status('وضع محلي: '+e.message);}}
+async function loadAll(){show('app');$('who').textContent=user?.email||'حساب موثق';$('month').value=new Date().toISOString().slice(0,7);$('date').value=defaults();try{await refresh();if(navigator.onLine){await ensureContracts();await refresh();await migrateNativePending();await flushQueue();await refresh();status('متصل — تمت المزامنة',true)}else{restoreCache();migrateNativePending();status('وضع دون إنترنت — ستُرسل التغييرات عند عودة الاتصال')}}catch(e){restoreCache();migrateNativePending();status('وضع محلي: '+e.message);}await loadOwnerControl().catch(e=>{$('ownerStatus').textContent='تعذر قراءة بيانات الملكية: '+e.message});}
+async function loadOwnerControl(){
+ ownerControl=null;
+ $('ownerPanel').classList.add('hidden');
+ try{
+  const rows=await api('app_owner_control?select=*&id=eq.1');
+  ownerControl=rows[0]||null;
+  if(!ownerControl){$('ownerStatus').textContent='لم يتم تسجيل المالك بعد. يجب على مسؤول قاعدة البيانات تعيين حساب المالك مرة واحدة؛ لا يمكن لأي مستخدم تعيين نفسه مالكاً من التطبيق.';$('releaseInfo').textContent='بيانات الملكية غير مهيأة.';return}
+  const isOwner=String(ownerControl.owner_user_id)===String(user?.id);
+  $('ownerStatus').textContent=isOwner?'تم التحقق من حساب المالك. صلاحيات التحكم مفعّلة.':'وضع مستخدم عادي: إعدادات الملكية وإصدار التحديثات مقفلة.';
+  $('releaseInfo').textContent='التطبيق: '+(ownerControl.owner_display_name||'ZAKARY GRD')+' — الإصدار المنشور: '+ownerControl.latest_version_name+' ('+ownerControl.latest_version_code+') — تاريخ الإصدار: '+ownerControl.release_date+'. '+(ownerControl.ownership_notice||'');
+  if(isOwner){
+   $('ownerPanel').classList.remove('hidden');
+   $('ownerDisplay').value=ownerControl.owner_display_name||'ZAKARY GRD Owner';
+   $('ownerNotice').value=ownerControl.ownership_notice||'';
+   $('ownerPinRequired').checked=ownerControl.owner_pin_required!==false;
+   $('updCode').value=Number(ownerControl.latest_version_code||1)+1;
+   $('updName').value='';$('updDate').value=defaults();$('updUrl').value='';$('updNotes').value='';
+  }
+  if(Number(ownerControl.latest_version_code)>APP_VERSION_CODE){
+   const a=document.createElement('a');a.textContent='يوجد إصدار أحدث: '+ownerControl.latest_version_name;
+   a.href=ownerControl.apk_url||'#';a.target='_blank';a.rel='noopener';a.style.cssText='display:inline-block;padding:10px 14px;background:#176e51;color:white;border-radius:8px;text-decoration:none';
+   if(ownerControl.apk_url)$('releaseInfo').appendChild(document.createElement('br')),$('releaseInfo').appendChild(a);
+  }
+ }catch(e){$('ownerStatus').textContent='تعذر قراءة بيانات الملكية: '+e.message;throw e}
+}
+async function saveOwnerSettings(){
+ if(!ownerControl||String(ownerControl.owner_user_id)!==String(user?.id))throw Error('هذه الصلاحية للمالك فقط.');
+ const d={owner_display_name:$('ownerDisplay').value.trim(),ownership_notice:$('ownerNotice').value.trim(),owner_pin_required:$('ownerPinRequired').checked,updated_at:new Date().toISOString()};
+ if(!d.owner_display_name)throw Error('أدخل اسم المالك.');
+ await api('app_owner_control?id=eq.1',{method:'PATCH',body:JSON.stringify(d)});
+ await loadOwnerControl();status('تم حفظ إعدادات الملكية بواسطة المالك فقط.',true);
+}
+async function publishOwnerRelease(){
+ if(!ownerControl||String(ownerControl.owner_user_id)!==String(user?.id))throw Error('إصدار التحديثات مخصص للمالك فقط.');
+ const code=Number($('updCode').value),name=$('updName').value.trim(),date=$('updDate').value,url=$('updUrl').value.trim(),notes=$('updNotes').value.trim();
+ if(!Number.isInteger(code)||code<=Number(ownerControl.latest_version_code)||!name||!date)throw Error('أدخل رقم إصدار أعلى واسم الإصدار وتاريخاً صحيحاً.');
+ if(!url.startsWith('https://'))throw Error('أدخل رابط تنزيل HTTPS صالحاً للنسخة الجديدة.');
+ const d={latest_version_code:code,latest_version_name:name,release_date:date,apk_url:url,release_notes:notes,updated_at:new Date().toISOString()};
+ await api('app_owner_control?id=eq.1',{method:'PATCH',body:JSON.stringify(d)});
+ await loadOwnerControl();status('نشر المالك معلومات الإصدار الجديد بنجاح. لا يوجد جدول زمني مفروض.',true);
+}
 async function ensureContracts(){let c=await api('contract_items?select=*&order=name');if(!c.length){await api('contract_items',{method:'POST',body:JSON.stringify(seed.map(([name,price,unit,method,company_name])=>({user_id:user.id,name,price,unit,method,company_name})))})}}
 function saveCache(){localStorage.setItem('hz_offline_cache',JSON.stringify({records,contracts,updatedAt:new Date().toISOString()}))}
 function restoreCache(){try{const c=JSON.parse(localStorage.getItem('hz_offline_cache')||'{}');records=Array.isArray(c.records)?c.records:[];contracts=Array.isArray(c.contracts)?c.contracts:[];render()}catch(e){records=[];contracts=[];render()}}
@@ -30,6 +71,8 @@ async function saveContract(){const name=$('cname').value.trim(),price=n('cprice
 async function audit(){try{const a=await api('audit_logs?select=*&order=changed_at.desc&limit=80');$('auditList').innerHTML=a.map(x=>'<div class="item">'+esc(new Date(x.changed_at).toLocaleString('ar-DZ'))+' — <b>'+esc(x.action)+'</b> — '+esc(x.table_name)+' — '+esc(x.record_id)+'</div>').join('')||'<p class="muted">لا توجد تعديلات مسجلة.</p>'}catch(e){$('auditList').textContent='تعذر تحميل سجل التدقيق: '+e.message}}
 function tab(id){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('hidden',x.id!==id))}
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+$('saveOwnerSettings').onclick=()=>saveOwnerSettings().catch(e=>alert(e.message));
+$('publishUpdate').onclick=()=>publishOwnerRelease().catch(e=>alert(e.message));
 $('saveConfig').onclick=()=>{let u=$('url').value.trim().replace(/\/$/,''),k=$('key').value.trim();if(!u.startsWith('https://')||!k){alert('أدخل رابط HTTPS والمفتاح العام.');return}localStorage.setItem('hz_url',u);localStorage.setItem('hz_key',k);location.reload()};
 $('clearConfig').onclick=()=>{localStorage.removeItem('hz_url');localStorage.removeItem('hz_key');localStorage.removeItem('hz_session');location.reload()};
 $('signIn').onclick=async()=>{try{base=localStorage.getItem('hz_url');key=localStorage.getItem('hz_key');const d=await auth('token?grant_type=password',{email:$('email').value,password:$('password').value});token=d.access_token;user=d.user;localStorage.setItem('hz_session',JSON.stringify({...d,expires_at:Math.floor(Date.now()/1000)+(d.expires_in||3600)}));await loadAll()}catch(e){$('authMsg').textContent=e.message}};
