@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZAKARY GRD — Offline Owner Viewer</title>
+<style>
+:root{font-family:Tahoma,Arial,sans-serif;color:#17382f;background:#edf3f0}*{box-sizing:border-box}body{margin:0}header{background:#123b35;color:#fff;padding:22px max(16px,calc((100% - 1150px)/2))}h1{margin:0;font-size:23px}header p{margin:8px 0 0;color:#d5e9df}.wrap{max-width:1150px;margin:auto;padding:16px}.panel,.card{background:#fff;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 2px 12px #123b3510}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.metric{font-size:25px;font-weight:bold;color:#16744f;margin-top:8px}.muted{color:#687b73;font-size:13px;line-height:1.7}button,input,select{font:inherit;padding:11px;border:1px solid #cbd9d3;border-radius:9px;background:#fff}button{background:#176e51;color:#fff;border:0;cursor:pointer;margin:5px 0}button.secondary{background:#e4efea;color:#174b3a}input[type=file]{max-width:100%}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:9px;border-bottom:1px solid #e4ece7;text-align:right}th{background:#f2f7f4} .scroll{overflow:auto}.notice{background:#fff4d7;padding:12px;border-radius:9px}.hidden{display:none}@media print{.noprint{display:none!important}body{background:white}.panel,.card{box-shadow:none;border:1px solid #ddd}}
+</style></head>
+<body>
+<header><h1>♻ ZAKARY GRD — لوحة اطلاع الحاسوب</h1><p>عارض محلي دون إنترنت • قراءة فقط • HENKEL ALGÉRIE — مصنع ميلة</p></header>
+<main class="wrap">
+<section class="panel noprint">
+<h2>تحميل نسخة البيانات</h2>
+<p class="muted">من الهاتف: الإعدادات ← التقارير والنسخ ← «مشاركة / حفظ نسخة احتياطية». انقل ملف JSON إلى الحاسوب، ثم اختره هنا. يعمل هذا العارض دون إنترنت ولا يرسل البيانات إلى أي خادم.</p>
+<div class="row"><input id="file" type="file" accept=".json,application/json"><button id="print" class="secondary">طباعة التقرير</button><button id="csv" class="secondary">تصدير CSV</button></div>
+<div id="status" class="notice">لم يتم تحميل بيانات بعد.</div>
+</section>
+<section id="data" class="hidden">
+<div class="grid">
+<div class="card"><div>عدد السجلات</div><div class="metric" id="count">0</div></div>
+<div class="card"><div>إجمالي الكميات المسجلة</div><div class="metric" id="qty">0</div></div>
+<div class="card"><div>إجمالي مداخيل البيع (دج)</div><div class="metric" id="income">0</div></div>
+<div class="card"><div>عدد عمليات البيع</div><div class="metric" id="sales">0</div></div>
+</div>
+<section class="panel"><h2>المداخيل حسب نوع النفاية</h2><div class="scroll"><table><thead><tr><th>نوع النفاية</th><th>عدد العمليات</th><th>الكمية</th><th>المداخيل (دج)</th></tr></thead><tbody id="groups"></tbody></table></div></section>
+<section class="panel"><h2>السجلات التفصيلية</h2><div class="row noprint"><input id="search" placeholder="بحث بالنوع أو الشركة أو التاريخ"><select id="month"><option value="">كل الأشهر</option></select></div><div class="scroll"><table><thead><tr><th>التاريخ</th><th>نوع النفاية</th><th>الشركة</th><th>الكمية</th><th>سعر الوحدة</th><th>المداخيل</th><th>الفاتورة</th><th>حالة الدفع</th></tr></thead><tbody id="rows"></tbody></table></div></section>
+</section>
+<p class="muted">هذا العارض لا يغيّر بيانات الهاتف ولا يوفّر تسجيل دخول أو إثبات ملكية بمفرده. احفظ ملف النسخة الاحتياطية في مكان آمن ولا ترسله إلا للمخوّلين.</p>
+</main>
+<script>
+let records=[];
+const $=id=>document.getElementById(id),num=v=>Number(v||0),money=v=>num(v).toLocaleString('fr-FR',{maximumFractionDigits:2});
+function safe(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function render(){
+ const sales=records.filter(r=>(r.operationType||'بيع مباشر')==='بيع مباشر');
+ $('count').textContent=records.length;$('qty').textContent=money(records.reduce((a,r)=>a+num(r.quantity),0));
+ $('income').textContent=money(sales.reduce((a,r)=>a+num(r.income),0));$('sales').textContent=sales.length;
+ const map={};sales.forEach(r=>{let k=r.type||'غير محدد';map[k]??={n:0,q:0,v:0};map[k].n++;map[k].q+=num(r.quantity);map[k].v+=num(r.income)});
+ $('groups').innerHTML=Object.entries(map).sort((a,b)=>b[1].v-a[1].v).map(([k,v])=>'<tr><td>'+safe(k)+'</td><td>'+v.n+'</td><td>'+money(v.q)+'</td><td>'+money(v.v)+'</td></tr>').join('')||'<tr><td colspan="4">لا توجد مبيعات</td></tr>';
+ const months=[...new Set(records.map(r=>(r.date||'').slice(0,7)).filter(Boolean))].sort().reverse();$('month').innerHTML='<option value="">كل الأشهر</option>'+months.map(m=>'<option>'+safe(m)+'</option>').join('');
+ drawRows();
+}
+function drawRows(){let q=$('search').value.toLowerCase(),m=$('month').value;let list=records.filter(r=>(!m||(r.date||'').startsWith(m))&&[r.type,r.buyerCompany,r.date,r.invoiceNumber].join(' ').toLowerCase().includes(q));$('rows').innerHTML=list.map(r=>'<tr><td>'+safe(r.date)+'</td><td>'+safe(r.type)+'</td><td>'+safe(r.buyerCompany)+'</td><td>'+money(r.quantity)+' '+safe(r.saleUnit)+'</td><td>'+money(r.unitPrice)+'</td><td>'+money(r.income)+'</td><td>'+safe(r.invoiceNumber)+'</td><td>'+safe(r.paymentStatus)+'</td></tr>').join('')||'<tr><td colspan="8">لا توجد نتائج</td></tr>';}
+$('file').addEventListener('change',async e=>{try{let f=e.target.files[0];if(!f)return;let j=JSON.parse(await f.text());records=Array.isArray(j)?j:(Array.isArray(j.records)?j.records:null);if(!records)throw Error('صيغة النسخة غير معروفة. اختر ملف JSON الصادر من التطبيق.');$('data').classList.remove('hidden');$('status').textContent='تم تحميل '+records.length+' سجل محليًا بنجاح.';render();}catch(err){$('status').textContent='تعذر تحميل الملف: '+err.message;}});
+$('search').addEventListener('input',drawRows);$('month').addEventListener('change',drawRows);$('print').onclick=()=>window.print();
+$('csv').onclick=()=>{let head=['Date','Waste type','Buyer','Quantity','Unit','Unit price DZD','Income DZD','Invoice','Payment status'];let lines=[head,...records.map(r=>[r.date,r.type,r.buyerCompany,r.quantity,r.saleUnit,r.unitPrice,r.income,r.invoiceNumber,r.paymentStatus])];let csv='\ufeff'+lines.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='ZAKARY-GRD-report.csv';a.click();URL.revokeObjectURL(a.href);};
+</script></body></html>
