@@ -92,3 +92,30 @@ alter table public.waste_records add column if not exists sale_unit text not nul
 alter table public.contract_items drop constraint if exists contract_items_user_id_name_key;
 create unique index if not exists contract_items_user_contract_name_uq
   on public.contract_items(user_id, contract_reference, name);
+
+
+-- Owner-controlled monthly application releases.
+create table if not exists public.app_update_control (
+ id integer primary key default 1 check (id=1),
+ owner_user_id uuid not null references auth.users(id) on delete restrict,
+ latest_version_code integer not null default 1 check (latest_version_code>0),
+ latest_version_name text not null default '1.0.0',
+ release_date date not null default current_date,
+ apk_url text not null default '',
+ release_notes text not null default '',
+ update_interval_days integer not null default 30 check (update_interval_days between 28 and 31),
+ updated_at timestamptz not null default now()
+);
+alter table public.app_update_control enable row level security;
+drop policy if exists app_update_read_authenticated on public.app_update_control;
+create policy app_update_read_authenticated on public.app_update_control
+ for select to authenticated using (true);
+drop policy if exists app_update_owner_update on public.app_update_control;
+create policy app_update_owner_update on public.app_update_control
+ for update to authenticated using (auth.uid()=owner_user_id) with check (auth.uid()=owner_user_id);
+
+-- OWNER INITIALIZATION (run once in Supabase SQL Editor after creating the owner's account):
+-- Replace OWNER_EMAIL with the exact email used by the owner in this app, then run:
+-- insert into public.app_update_control (id, owner_user_id, latest_version_code, latest_version_name, release_date, update_interval_days)
+-- select 1, id, 1, '1.0.0', current_date, 30 from auth.users where email='OWNER_EMAIL'
+-- on conflict (id) do update set owner_user_id=excluded.owner_user_id;
