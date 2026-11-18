@@ -23,3 +23,18 @@
 
 ## حدود النسخة
 تطبيق الويب يستخدم قاعدة Supabase مشتركة بعد إعدادها. تطبيق Android الأصلي الحالي لا يزال يستخدم تخزيناً محلياً؛ لا تعتبره متزامناً مع الويب إلى أن يتم دمج مصادقة وقاعدة البيانات فيه واختبارها. التخزين دون اتصال حالياً يحفظ ملفات الواجهة فقط، أما إدخال البيانات فيتطلب اتصالاً عند الحفظ.
+
+
+## Owner-only ownership and release control
+
+The in-app **المالك والحماية** panel has no monthly schedule. Only the account whose UUID is stored as `owner_user_id` in `public.app_owner_control` can edit the ownership notice/settings or publish a new release record. Supabase Row Level Security enforces this on the database; hiding the panel in the browser is not the security boundary.
+
+### One-time owner binding
+1. Create/sign in to the intended owner's account in Supabase Auth.
+2. Run the `cloud-sync/schema.sql` script in the Supabase SQL Editor.
+3. In the commented `INITIAL OWNER REGISTRATION` statement at the end of that script, replace `OWNER_EMAIL` with the exact owner's login email, uncomment the statement, and run it once.
+4. Do not grant the owner role to another account. Never place the Supabase service-role key in the app.
+
+After that, the owner can open **المالك والحماية** inside ZAKARY GRD and publish a release whenever they choose. Publishing release information does not itself compile or silently install an APK: build the signed/release APK through the trusted build process, then enter its HTTPS download URL and release notes in the owner panel.
+
+The database owner binding protects management rights on the connected service. It does not, by itself, prevent copying the APK file or prove copyright ownership in court; a separate offline signed license and protected private signing key are needed for stronger clone/ownership protection.
