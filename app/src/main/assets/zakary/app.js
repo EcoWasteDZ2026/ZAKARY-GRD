@@ -1,4 +1,4 @@
-const $=id=>document.getElementById(id);let base=localStorage.getItem('hz_url')||'',key=localStorage.getItem('hz_key')||'',token='',user=null,records=[],contracts=[],ownerControl=null;const APP_VERSION_CODE=1,APP_VERSION_NAME='1.0.0';
+const $=id=>document.getElementById(id);let base=localStorage.getItem('hz_url')||'',key=localStorage.getItem('hz_key')||'',token='',user=null,records=[],contracts=[],ownerControl=null;const APP_VERSION_CODE=2,APP_VERSION_NAME='1.1.0';
 const seed=[['صناديق كرتونية ونفايات الورق',2.4,'كغ','بيع','SNC Groupe EL BADISSIA'],['أغلفة وأفلام بلاستيكية',5.4,'كغ','بيع','SNC Groupe EL BADISSIA'],['أكياس Big Bags',4.8,'كغ','بيع','SNC Groupe EL BADISSIA'],['براميل معدنية',216,'وحدة','بيع','SNC Groupe EL BADISSIA'],['منصات خشبية وبقايا الخشب',2.5,'كغ','بيع','SNC Groupe EL BADISSIA'],['أكياس وأغلفة PE ملوثة بالمنظفات وغير قابلة للاسترجاع',0,'حسب الكمية','غير قابل للبيع','']];
 const n=id=>Number($(id).value||0),f=x=>Number(x||0).toLocaleString('fr-FR',{maximumFractionDigits:2});
 function status(t,ok=false){$('syncState').textContent=t;$('syncState').className=ok?'muted ok':'muted'}
