@@ -36,7 +36,15 @@
 </main>
 <script>
 const KEY='zakary_grd_desktop_v2', $=id=>document.getElementById(id), n=v=>Number(v||0), fmt=v=>n(v).toLocaleString('fr-FR',{maximumFractionDigits:2}), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let db={schemaVersion:2,records:[],contracts:[]};
+let db={schemaVersion:2,records:[],contracts:[
+{company:'SNC Groupe EL BADISSIA',reference:'NEW CONTRAT 2026',effectiveDate:'2026-08-08',name:'صناديق كرتونية ونفايات الورق',price:2.40,unit:'كغ'},
+{company:'SNC Groupe EL BADISSIA',reference:'NEW CONTRAT 2026',effectiveDate:'2026-08-08',name:'الأغلفة البلاستيكية (المطاطية وأغلفة التغليف)',price:5.40,unit:'كغ'},
+{company:'SNC Groupe EL BADISSIA',reference:'NEW CONTRAT 2026',effectiveDate:'2026-08-08',name:'أكياس Big Bags',price:4.80,unit:'كغ'},
+{company:'SNC Groupe EL BADISSIA',reference:'NEW CONTRAT 2026',effectiveDate:'2026-08-08',name:'براميل معدنية',price:216,unit:'وحدة'},
+{company:'SNC Groupe EL BADISSIA',reference:'NEW CONTRAT 2026',effectiveDate:'2026-08-08',name:'نفايات المنصات الخشبية وبقايا الخشب',price:2.50,unit:'كغ'},
+{company:'SNC Groupe EL BADISSIA',reference:'NEW CONTRAT 2026',effectiveDate:'2026-08-08',name:'أكياس وأغلفة PE ملوثة بالمنظفات وغير قابلة للاسترجاع',price:0,unit:'حسب الكمية'},
+...['عبوات ملوثة بمنتجات كيميائية','نفايات المطعم','نفايات المختبر','معدات الوقاية الشخصية الملوثة','نفايات الزيوت المستعملة','نفايات البناء'].map(name=>({company:'',reference:'إزالة مجانية',effectiveDate:'',name,price:0,unit:'حسب الكمية'}))
+]};
 function load(){try{let x=JSON.parse(localStorage.getItem(KEY)||'{}');if(Array.isArray(x))db.records=x;else db={...db,...x};}catch(e){}if(!Array.isArray(db.records))db.records=[];if(!Array.isArray(db.contracts))db.contracts=[];renderAll();}
 function persist(){localStorage.setItem(KEY,JSON.stringify(db));renderAll();}
 function go(id){document.querySelectorAll('.section').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));if(id==='reports')renderReport();}
