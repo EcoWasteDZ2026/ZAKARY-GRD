@@ -48,8 +48,8 @@ class MainActivity : Activity() {
         ContractItem("نفايات المنصات الخشبية وبقايا الخشب", 2.50, "كغ", "بيع", "SNC Groupe EL BADISSIA"),
         ContractItem("أكياس وأغلفة PE ملوثة بالمنظفات وغير قابلة للاسترجاع", 0.0, "حسب الكمية", "غير قابل للبيع")
     )
-    private val types get() = contractItems.filter { it.contractReference == activeContractReference }.map { it.name } + listOf("نفايات صناعية أخرى (تُضاف لاحقاً)")
-    private fun contractItem(name: String) = contractItems.find { it.name == name && it.contractReference == activeContractReference }
+    private val types get() = contractItems.filter { it.contractReference == activeContractReference || it.method == "إزالة مجانية" }.map { it.name } + listOf("نفايات صناعية أخرى (تُضاف لاحقاً)")
+    private fun contractItem(name: String) = contractItems.find { it.name == name && (it.contractReference == activeContractReference || it.method == "إزالة مجانية") }
     private val departments = listOf("الإنتاج", "المخازن", "الصيانة", "المخبر", "معالجة المياه", "الإدارة", "أخرى")
     private val destinations = listOf("خروج إلى الشركة المشترية", "أخرى")
     private val pages = mutableMapOf<String, LinearLayout>()
@@ -92,6 +92,7 @@ class MainActivity : Activity() {
         appLanguage = getSharedPreferences("zakary_settings", MODE_PRIVATE).getString("language", "ar") ?: "ar"
         loadRecords()
         loadContracts()
+        ensureHenkelFreeWasteItems()
         restoreProduction()
         buildScreen()
         renderRecords()
@@ -111,7 +112,7 @@ class MainActivity : Activity() {
             "الإعدادات" to Pair("Paramètres", "Settings"),
             "SFERA – سفيرا" to Pair("SFERA", "SFERA"),
             "هذا القسم مخصص لتوثيق وعرض محتويات نظام SFERA المستخدم في مصنع هنكل." to Pair("Cette section est dédiée à la documentation et à la présentation du système SFERA utilisé dans l’usine Henkel.", "This section is dedicated to documenting and presenting the SFERA system used at the Henkel plant."),
-            "لم تتم إضافة وحدات النظام أو إجراءاته بعد. ستظهر هنا بعد مراجعة الصور والمعلومات التي سترسلها، دون افتراض أي وظيفة غير موثقة." to Pair("Les modules et procédures du système ne sont pas encore ajoutés. Ils apparaîtront ici après examen des images et informations que vous enverrez, sans supposer de fonctions non documentées.", "System modules and procedures have not been added yet. They will appear here after reviewing the screenshots and information you send, without assuming undocumented functions.")
+            "لم تتم إضافة وحدات النظام أو إجراءاته بعد. ستظهر هنا بعد مراجعة الصور والمعلومات التي سترسلها، دون افتراض أي وظيفة غير موثقة." to Pair("Les modules et procédures du système ne sont pas encore ajoutés. Ils apparaîtront ici après examen des images et informations que vous enverrez, sans supposer de fonctions non documentées.", "System modules and procedures have not been added yet. They will appear here after reviewing the screenshots and information you send, without assuming undocumented functions."),
             "نظام تسيير واسترجاع النفايات الصناعية — مصنع هنكل، ولاية ميلة" to Pair("Système de gestion et de valorisation des déchets industriels — usine Henkel, Mila", "Industrial waste management system — Henkel plant, Mila"),
             "HENKEL MILA • العقود • التتبع • التثمين • التقارير" to Pair("HENKEL MILA • Contrats • Suivi • Valorisation • Rapports", "HENKEL MILA • Contracts • Tracking • Sales • Reports"),
             "＋ تسجيل نفايات جديدة" to Pair("＋ Enregistrer un déchet", "＋ Record new waste"),
@@ -565,7 +566,7 @@ class MainActivity : Activity() {
         quantityInput = field(formPage, "الكمية الإجمالية بالكيلوغرام", true)
         destinationSpinner = spinner(formPage, destinations)
         incomeInput = field(formPage, "مداخيل البيع (تحسب آلياً من العقد)", true)
-        operationSpinner = spinner(formPage, listOf("بيع مباشر"))
+        operationSpinner = spinner(formPage, listOf("بيع مباشر", "منح مجاني"))
         buyerInput = field(formPage, "الشركة المشترية (للبيع فقط)")
         contractSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
@@ -574,7 +575,7 @@ class MainActivity : Activity() {
                 activeContractCompany = contractItems.firstOrNull { it.contractReference == activeContractReference }?.companyName ?: activeContractCompany
                 activeContractEffectiveDate = contractItems.firstOrNull { it.contractReference == activeContractReference }?.effectiveDate ?: activeContractEffectiveDate
                 typeSpinner.adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item,
-                    contractItems.filter { it.contractReference == activeContractReference }.map { tr(it.name) } + tr("نفايات صناعية أخرى (تُضاف لاحقاً)"))
+                    contractItems.filter { it.contractReference == activeContractReference || it.method == "إزالة مجانية" }.map { tr(it.name) } + tr("نفايات صناعية أخرى (تُضاف لاحقاً)"))
                 updateIncomePreview()
             }
         }
@@ -585,7 +586,7 @@ class MainActivity : Activity() {
                 quantityInput.hint = if (item?.unit == "كغ") tr("الكمية الإجمالية بالكيلوغرام") else tr("الكمية بعدد الوحدات")
                 if (item != null) {
                     buyerInput.setText(if (item.method == "بيع") item.companyName else "")
-                    operationSpinner.setSelection(0)
+                    operationSpinner.setSelection(if (item.method == "إزالة مجانية") 1 else 0)
                     updateIncomePreview()
                 }
             }
@@ -766,27 +767,30 @@ class MainActivity : Activity() {
         val recovered = 0.0
         val cost = 0.0
         val selectedType = untr(typeSpinner.selectedItem.toString())
-        val operation = "بيع مباشر"
         val item = contractItem(selectedType)
-        if (item == null || item.method != "بيع") {
-            Toast.makeText(this, tr("لا يمكن بيع هذا النوع دون بند بيع في العقد."), Toast.LENGTH_LONG).show()
+        if (item == null || (item.method != "بيع" && item.method != "إزالة مجانية")) {
+            Toast.makeText(this, tr("نوع النفاية غير مهيأ للبيع أو المنح المجاني."), Toast.LENGTH_LONG).show()
             return
         }
-        val buyer = buyerInput.text.toString().trim()
-        if (buyer.isBlank() || buyer != item.companyName) {
+        val isSale = item.method == "بيع"
+        val operation = if (isSale) "بيع مباشر" else "منح مجاني"
+        val buyer = if (isSale) buyerInput.text.toString().trim() else ""
+        if (isSale && (buyer.isBlank() || buyer != item.companyName)) {
             Toast.makeText(this, tr("الشركة المشترية يجب أن تطابق الشركة المحددة في العقد."), Toast.LENGTH_LONG).show()
             return
         }
-        val income = (quantity ?: 0.0) * item.price
         if (!isValidIsoDate(date) || quantity == null || quantity <= 0) {
             Toast.makeText(this, tr("تحقق من التاريخ والكمية."), Toast.LENGTH_LONG).show()
             return
         }
+        val income = if (isSale) quantity * item.price else 0.0
+        val extraLocation = if (selectedType.contains("Construction waste", true) || selectedType.contains("نفايات البناء")) "الموقع: ولاية ميلة، شلغوم العيد" else ""
+        val userNote = listOf(noteInput.text.toString().trim(), extraLocation).filter { it.isNotBlank() }.joinToString(" | ")
         val newId = UUID.randomUUID().toString()
         records.add(0, WasteRecord(newId, date, selectedType,
             untr(departmentSpinner.selectedItem.toString()), quantity, recovered, untr(destinationSpinner.selectedItem.toString()),
-            cost, income, noteInput.text.toString().trim(), if (operation == "بيع مباشر") buyer else "", operation,
-            dispatchInput.text.toString().trim(), invoiceNumberInput.text.toString().trim(), invoiceDateInput.text.toString().trim(), untr(paymentStatusSpinner.selectedItem.toString()), paymentDateInput.text.toString().trim(), activeContractReference, item.price, item.unit))
+            cost, income, userNote, buyer, operation,
+            dispatchInput.text.toString().trim(), if (isSale) invoiceNumberInput.text.toString().trim() else "", if (isSale) invoiceDateInput.text.toString().trim() else "", if (isSale) untr(paymentStatusSpinner.selectedItem.toString()) else "غير مفوتر", if (isSale) paymentDateInput.text.toString().trim() else "", item.contractReference, item.price, item.unit))
         persistRecords()
         cloud.markRecordDirty(newId)
         if (cloud.connected()) syncCloud(false)
@@ -802,9 +806,10 @@ class MainActivity : Activity() {
         if (!::incomeInput.isInitialized || !::typeSpinner.isInitialized || !::quantityInput.isInitialized) return
         val item = contractItem(untr(typeSpinner.selectedItem?.toString() ?: ""))
         val q = number(quantityInput, 0.0) ?: 0.0
-        val sale = true
-        incomeInput.setText(if (sale && item?.method == "بيع") fmt(q * item.price) else "0")
-        if (sale && item != null && item.method == "بيع" && ::buyerInput.isInitialized && buyerInput.text.isNullOrBlank()) buyerInput.setText(item.companyName)
+        val sale = item?.method == "بيع"
+        incomeInput.setText(if (sale == true) fmt(q * item!!.price) else "0")
+        if (sale == true && item != null && ::buyerInput.isInitialized && buyerInput.text.isNullOrBlank()) buyerInput.setText(item.companyName)
+        if (sale == false && ::buyerInput.isInitialized) buyerInput.setText("")
     }
 
     private fun clearForm() {
@@ -1002,6 +1007,28 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
             activeContractEffectiveDate = getSharedPreferences("henkel_contracts", MODE_PRIVATE).getString("active_effective", contractItems.firstOrNull { it.contractReference == activeContractReference }?.effectiveDate ?: activeContractEffectiveDate) ?: activeContractEffectiveDate
         } catch (_: Exception) { }
     }
+    private fun ensureHenkelFreeWasteItems() {
+        val freeNames = listOf(
+            "عبوات ملوثة بمنتجات كيميائية (Emballages contaminés par produit chimique)",
+            "نفايات المطعم (Déchets cantine)",
+            "نفايات المختبر (Déchets laboratoire)",
+            "معدات الوقاية الشخصية الملوثة (Déchets EPI contaminés)",
+            "نفايات الزيوت المستعملة (Déchets huile usagée)",
+            "نفايات البناء (Construction waste) — ولاية ميلة، شلغوم العيد"
+        )
+        var changed = false
+        freeNames.forEach { name ->
+            if (contractItems.none { it.name == name && it.method == "إزالة مجانية" }) {
+                contractItems.add(ContractItem(name, 0.0, "وحدة", "إزالة مجانية", "", activeContractReference, activeContractEffectiveDate))
+                changed = true
+            }
+        }
+        if (changed) {
+            persistContracts()
+            cloud.markContractsDirty()
+        }
+    }
+
     private fun refreshContracts() {
         if (!::contractsPage.isInitialized) return
         while (contractsPage.childCount > 6) contractsPage.removeViewAt(6)
@@ -1219,6 +1246,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
                                 runOnUiThread {
                                     records.clear(); records.addAll(result.first)
                                     contractItems.clear(); contractItems.addAll(result.second)
+                                    ensureHenkelFreeWasteItems()
                                     persistRecords(); persistContracts()
                                     if (::typeSpinner.isInitialized) typeSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, types)
                                     renderRecords(); refreshDashboard(); refreshFinance(); refreshContracts()
@@ -1246,6 +1274,7 @@ AlertDialog.Builder(this).setTitle(tr("تعديل ") + r.type).setView(panel)
                 runOnUiThread {
                     records.clear(); records.addAll(result.first)
                     contractItems.clear(); contractItems.addAll(result.second)
+                    ensureHenkelFreeWasteItems()
                     persistRecords(); persistContracts()
                     if (::typeSpinner.isInitialized) typeSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, types)
                     renderRecords(); refreshDashboard(); refreshFinance(); refreshContracts()
