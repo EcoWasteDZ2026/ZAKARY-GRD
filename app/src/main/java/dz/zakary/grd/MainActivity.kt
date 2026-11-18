@@ -477,7 +477,7 @@ class MainActivity : Activity() {
         setContentView(scroll)
 
         val top = TextView(this).apply {
-            text = "HENKEL ALGÉRIE  ♻\nZAKARY GRD"
+            text = "Henkel  ♻\nZAKARY GRD"
             textSize = 23f
             setTypeface(null, Typeface.BOLD)
             setTextColor(0xFFFFFFFF.toInt())
