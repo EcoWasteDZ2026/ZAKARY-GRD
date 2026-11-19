@@ -19,12 +19,12 @@ create table if not exists public.waste_types (
   is_contract_category boolean not null default false,
   payment_enabled boolean not null default false,
   contract_rate numeric(14,2),
-  default_unit text not null default 'kg',
+  default_unit text,
   allowed_units text[] not null default array['kg','tonne','litre','unit']::text[],
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   constraint waste_types_rate_nonnegative check (contract_rate is null or contract_rate >= 0),
-  constraint waste_types_default_unit_allowed check (default_unit = any(allowed_units))
+  constraint waste_types_default_unit_allowed check (default_unit is null or default_unit = any(allowed_units))
 );
 
 create table if not exists public.waste_records (
@@ -143,18 +143,26 @@ for delete to authenticated using (public.zakary_is_admin());
 
 insert into public.waste_types (name, is_contract_category, payment_enabled, contract_rate, default_unit, allowed_units)
 values
- ('Caisses Cartons et déchets de papiers', true, false, null, 'kg', array['kg','tonne']::text[]),
- ('Film Plastique (étirable, houssage)', true, false, null, 'kg', array['kg','tonne']::text[]),
- ('Big Bags', true, false, null, 'unit', array['unit','kg']::text[]),
- ('Fûts Métalliques', true, false, null, 'unit', array['unit','kg']::text[]),
- ('Déchets palettes en bois et débris de bois', true, false, null, 'kg', array['kg','tonne','unit']::text[]),
- ('Emballages contaminés par produit chimique', false, false, null, 'kg', array['kg','tonne','unit']::text[]),
- ('Déchets cantine', false, false, null, 'kg', array['kg','tonne']::text[]),
- ('Déchets laboratoire', false, false, null, 'kg', array['kg','litre','unit']::text[]),
- ('Déchets EPI contaminés', false, false, null, 'kg', array['kg','unit']::text[]),
- ('Déchets huile usagée', false, false, null, 'litre', array['litre','kg']::text[]),
- ('Construction waste', false, false, null, 'kg', array['kg','tonne','unit']::text[])
+ ('Caisses Cartons et déchets de papiers', true, false, null, null, array['kg','tonne','litre','unit']::text[]),
+ ('Film Plastique (étirable, houssage)', true, false, null, null, array['kg','tonne','litre','unit']::text[]),
+ ('Big Bags', true, false, null, null, array['kg','tonne','litre','unit']::text[]),
+ ('Fûts Métalliques', true, false, null, null, array['kg','tonne','litre','unit']::text[]),
+ ('Déchets palettes en bois et débris de bois', true, false, null, null, array['kg','tonne','litre','unit']::text[]),
+ ('Emballages contaminés par produit chimique', false, false, null, null, array['kg','tonne','litre','unit']::text[]),
+ ('Déchets cantine', false, false, null, null, array['kg','tonne','litre','unit']::text[]),
+ ('Déchets laboratoire', false, false, null, null, array['kg','tonne','litre','unit']::text[]),
+ ('Déchets EPI contaminés', false, false, null, null, array['kg','tonne','litre','unit']::text[]),
+ ('Déchets huile usagée', false, false, null, null, array['kg','tonne','litre','unit']::text[]),
+ ('Construction waste', false, false, null, null, array['kg','tonne','litre','unit']::text[])
 on conflict (name) do nothing;
+
+-- Client access is granted only to authenticated users; RLS policies above
+-- decide which rows each authenticated user may read or modify.
+grant usage on schema public to authenticated;
+grant select, update on public.profiles to authenticated;
+grant select, insert, update, delete on public.waste_types to authenticated;
+grant select, insert, update, delete on public.waste_records to authenticated;
+grant select, insert, update, delete on public.sevira_records to authenticated;
 
 -- Do not insert a default administrator or activate accounts automatically.
 -- The first administrator must be assigned deliberately after the owner account is verified.
