@@ -7,6 +7,7 @@ on:
       - feature/flutter-cross-platform
     paths:
       - 'lib/**'
+      - 'test/**'
       - 'pubspec.yaml'
       - 'supabase/**'
       - '.github/workflows/build-flutter.yml'
