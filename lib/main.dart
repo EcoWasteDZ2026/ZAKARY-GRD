@@ -96,10 +96,87 @@ class AuthGate extends StatelessWidget {
       builder: (context, snapshot) {
         final session = Supabase.instance.client.auth.currentSession;
         if (session == null) return LoginPage(french: french, onLanguage: onLanguage);
-        return MainShell(french: french, onLanguage: onLanguage);
+        return ActivationGate(
+          key: ValueKey(session.user.id),
+          french: french,
+          onLanguage: onLanguage,
+        );
       },
     );
   }
+}
+
+class ActivationGate extends StatefulWidget {
+  const ActivationGate({super.key, required this.french, required this.onLanguage});
+  final bool french;
+  final VoidCallback onLanguage;
+  @override
+  State<ActivationGate> createState() => _ActivationGateState();
+}
+
+class _ActivationGateState extends State<ActivationGate> {
+  late Future<bool> active;
+  @override
+  void initState() {
+    super.initState();
+    active = _checkActivation();
+  }
+
+  Future<bool> _checkActivation() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return false;
+    final row = await Supabase.instance.client
+        .from('profiles')
+        .select('is_active')
+        .eq('id', user.id)
+        .maybeSingle();
+    return row?['is_active'] == true;
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<bool>(
+    future: active,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState != ConnectionState.done) {
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      }
+      if (snapshot.hasError || snapshot.data != true) {
+        return Directionality(
+          textDirection: widget.french ? TextDirection.ltr : TextDirection.rtl,
+          child: Scaffold(
+            appBar: AppBar(title: const Text('ZAKARY GRD'), actions: [
+              TextButton(onPressed: widget.onLanguage, child: Text(widget.french ? 'العربية' : 'Français', style: const TextStyle(color: Colors.white))),
+            ]),
+            body: Center(child: Card(child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.lock_clock, size: 56, color: Colors.orange),
+                const SizedBox(height: 12),
+                Text(widget.french ? 'Compte en attente d’activation' : 'الحساب في انتظار تفعيل المسؤول',
+                  style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
+                const SizedBox(height: 10),
+                Text(widget.french
+                  ? 'Votre compte a été créé, mais l’administrateur doit l’activer avant l’accès aux données de l’usine.'
+                  : 'تم إنشاء الحساب، لكن يجب على المسؤول تفعيله قبل الوصول إلى بيانات المصنع.',
+                  textAlign: TextAlign.center),
+                if (snapshot.hasError) Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(widget.french ? 'Vérifiez le schéma de la base de données.' : 'يرجى التحقق من إعداد جداول قاعدة البيانات.',
+                    style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton(
+                  onPressed: () => Supabase.instance.client.auth.signOut(),
+                  child: Text(widget.french ? 'Se déconnecter' : 'تسجيل الخروج'),
+                ),
+              ]),
+            ))),
+          ),
+        );
+      }
+      return MainShell(french: widget.french, onLanguage: widget.onLanguage);
+    },
+  );
 }
 
 class LoginPage extends StatefulWidget {
