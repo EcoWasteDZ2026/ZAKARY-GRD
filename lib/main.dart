@@ -409,35 +409,35 @@ class _ReportsRecordsPageState extends State<ReportsRecordsPage>{
 }
 Widget _reportTile(String a,String b)=>Card(child:ListTile(title:Text(a),trailing:Text(b,style:const TextStyle(fontWeight:FontWeight.bold))));
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key, required this.french});
   final bool french;
-  @override
-  Widget build(BuildContext context) {
-    final items = french
-      ? [('Déchets générés', '—'), ('Quantité récupérée', '—'), ('Taux de récupération', '—'), ('Nombre d’opérations', '—')]
-      : [('إجمالي النفايات المنتجة', '—'), ('الكمية المسترجعة', '—'), ('نسبة الاسترجاع', '—'), ('عدد العمليات', '—')];
-    return ListView(padding: const EdgeInsets.all(20), children: [
-      Text(french ? 'HENKEL ALGÉRIE – Mila' : 'HENKEL ALGÉRIE – Mila', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-      const SizedBox(height: 6),
-      Text(french ? 'Vue d’ensemble de la gestion des déchets' : 'نظرة عامة على تسيير النفايات'),
-      const SizedBox(height: 18),
-      LayoutBuilder(builder: (context, c) {
-        final count = c.maxWidth > 850 ? 4 : c.maxWidth > 520 ? 2 : 1;
-        return GridView.count(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), crossAxisCount: count, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 2.0,
-          children: [for (final item in items) Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-            Text(item.$1, style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
-            Text(item.$2, style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: const Color(0xFF247A5A), fontWeight: FontWeight.bold)),
-          ])))],
-        );
-      }),
-      const SizedBox(height: 12),
-      Card(child: Padding(padding: const EdgeInsets.all(18), child: Text(french
-        ? 'La connexion à la base partagée sera activée après vérification du schéma et des règles de sécurité Supabase.'
-        : 'سيتم تفعيل البيانات المشتركة بعد مراجعة جداول Supabase وسياسات الحماية.'))),
+  @override State<DashboardPage> createState()=>_DashboardPageState();
+}
+class _DashboardPageState extends State<DashboardPage> {
+  Future<List<Map<String,dynamic>>> load() async => List<Map<String,dynamic>>.from(await Supabase.instance.client.from('waste_records').select('quantity,recovered_quantity,cost_dzd,income_dzd'));
+  @override Widget build(BuildContext context)=>FutureBuilder<List<Map<String,dynamic>>>(future:load(),builder:(context,s){
+    if(s.hasError)return Center(child:Padding(padding:const EdgeInsets.all(20),child:Text(s.error.toString(),textAlign:TextAlign.center)));
+    if(!s.hasData)return const Center(child:CircularProgressIndicator());
+    final rows=s.data!;
+    double sum(String key)=>rows.fold(0.0,(a,r)=>a+(double.tryParse(r[key].toString())??0));
+    final q=sum('quantity'), rec=sum('recovered_quantity');
+    final cards=[
+      [widget.french?'Quantité totale':'إجمالي النفايات',q.toStringAsFixed(2)],
+      [widget.french?'Quantité récupérée':'الكمية المسترجعة',rec.toStringAsFixed(2)],
+      [widget.french?'Taux de récupération':'نسبة الاسترجاع',(q==0?0:rec/q*100).toStringAsFixed(1)+'%'],
+      [widget.french?'Opérations':'عدد العمليات',rows.length.toString()],
+      [widget.french?'Coûts totaux':'إجمالي التكاليف',sum('cost_dzd').toStringAsFixed(2)+' DZD'],
+      [widget.french?'Revenus totaux':'إجمالي المداخيل',sum('income_dzd').toStringAsFixed(2)+' DZD']
+    ];
+    return ListView(padding:const EdgeInsets.all(18),children:[
+      Text('HENKEL ALGÉRIE – Mila',style:Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight:FontWeight.bold)),
+      const SizedBox(height:6),Text(widget.french?'Suivi de la gestion et valorisation des déchets':'متابعة تسيير واسترجاع النفايات'),
+      const SizedBox(height:16),
+      LayoutBuilder(builder:(context,c){final n=c.maxWidth>850?3:c.maxWidth>520?2:1;return GridView.count(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),crossAxisCount:n,crossAxisSpacing:10,mainAxisSpacing:10,childAspectRatio:2.1,children:[for(final x in cards)Card(child:Padding(padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[Text(x[0]),const SizedBox(height:6),Text(x[1],style:Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight:FontWeight.bold,color:const Color(0xff247a5a)))])))]);}),
+      Card(child:Padding(padding:const EdgeInsets.all(16),child:Text(widget.french?'Indicateurs calculés à partir des opérations enregistrées.':'المؤشرات محسوبة تلقائياً من العمليات المسجلة.')))
     ]);
-  }
+  });
 }
 
 class InfoPage extends StatelessWidget {
