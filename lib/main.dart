@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const _supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -279,10 +279,10 @@ class _MainShellState extends State<MainShell> {
   Widget build(BuildContext context) {
     final pages = [
       DashboardPage(french: widget.french),
-      InfoPage(title: labels[1], subtitle: widget.french ? 'Registre unifié des 11 catégories. Les unités seront définies par catégorie.' : 'السجل الموحد للأنواع الـ11. ستُحدد وحدة القياس حسب كل نوع.', icon: Icons.recycling),
-      InfoPage(title: labels[2], subtitle: widget.french ? 'Calcul indépendant des coûts et revenus pour chaque catégorie.' : 'حساب مستقل للتكاليف والمداخيل لكل نوع نفايات.', icon: Icons.payments_outlined),
-      InfoPage(title: 'SEVIRA', subtitle: widget.french ? 'Registre séparé, indépendant du registre principal.' : 'قسم مستقل عن سجل النفايات الرئيسي.', icon: Icons.table_chart_outlined),
-      InfoPage(title: labels[4], subtitle: widget.french ? 'Rapports, export CSV et sauvegarde.' : 'التقارير وتصدير CSV والنسخ الاحتياطي.', icon: Icons.assessment_outlined),
+      WasteRecordsPage(french: widget.french),
+      FinanceRecordsPage(french: widget.french),
+      SeviraRecordsPage(french: widget.french),
+      ReportsRecordsPage(french: widget.french),
     ];
     return Directionality(
       textDirection: widget.french ? TextDirection.ltr : TextDirection.rtl,
@@ -315,6 +315,99 @@ class _MainShellState extends State<MainShell> {
     );
   }
 }
+
+
+class WasteRecordsPage extends StatefulWidget {
+  const WasteRecordsPage({super.key, required this.french});
+  final bool french;
+  @override State<WasteRecordsPage> createState()=>_WasteRecordsPageState();
+}
+class _WasteRecordsPageState extends State<WasteRecordsPage> {
+  Future<List<Map<String,dynamic>>> load() async => List<Map<String,dynamic>>.from(await Supabase.instance.client.from('waste_records').select('*,waste_types(name)').order('operation_date',ascending:false));
+  Future<void> add() async {
+    final db=Supabase.instance.client;
+    final types=List<Map<String,dynamic>>.from(await db.from('waste_types').select('id,name').eq('is_active',true).order('name'));
+    if(!mounted)return;
+    final qty=TextEditingController(), recovered=TextEditingController(text:'0'), dept=TextEditingController(), dest=TextEditingController(), method=TextEditingController(), cost=TextEditingController(text:'0'), income=TextEditingController(text:'0'), notes=TextEditingController();
+    String? type=types.isEmpty?null:types.first['id'].toString(); String unit='kg'; DateTime date=DateTime.now();
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setD)=>AlertDialog(
+      title:Text(widget.french?'Nouvel enregistrement':'تسجيل نفايات جديد'),
+      content:SizedBox(width:460,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+        DropdownButtonFormField<String>(value:type,decoration:InputDecoration(labelText:widget.french?'Type de déchet':'نوع النفايات'),items:types.map((t)=>DropdownMenuItem(value:t['id'].toString(),child:Text(t['name'].toString(),overflow:TextOverflow.ellipsis))).toList(),onChanged:(v)=>setD(()=>type=v)),
+        TextButton(onPressed:()async{final d=await showDatePicker(context:ctx,initialDate:date,firstDate:DateTime(2020),lastDate:DateTime(2100));if(d!=null)setD(()=>date=d);},child:Text(date.toIso8601String().substring(0,10))),
+        _field(qty,widget.french?'Quantité':'الكمية',true),
+        DropdownButtonFormField<String>(value:unit,decoration:InputDecoration(labelText:widget.french?'Unité':'الوحدة'),items:['kg','tonne','litre','unit'].map((u)=>DropdownMenuItem(value:u,child:Text(u))).toList(),onChanged:(v)=>setD(()=>unit=v??'kg')),
+        _field(recovered,widget.french?'Quantité récupérée':'الكمية المسترجعة',true),
+        _field(dept,widget.french?'Département':'القسم المنتج'),
+        _field(dest,widget.french?'Destination / prestataire':'الوجهة / المتعامل'),
+        _field(method,widget.french?'Traitement / valorisation':'المعالجة / التثمين'),
+        _field(cost,widget.french?'Coût DZD':'التكلفة دج',true),_field(income,widget.french?'Revenu DZD':'المداخيل دج',true),_field(notes,widget.french?'Notes':'ملاحظات')
+      ]))),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:Text(widget.french?'Annuler':'إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:Text(widget.french?'Enregistrer':'حفظ'))]
+    )));
+    if(ok==true){
+      final q=double.tryParse(qty.text.replaceAll(',','.'))??0, r=double.tryParse(recovered.text.replaceAll(',','.'))??0;
+      if(type==null||q<=0||r<0||r>q){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(widget.french?'Quantités invalides':'الكمية غير صحيحة')));}
+      else {try{await db.from('waste_records').insert({'operation_date':date.toIso8601String().substring(0,10),'waste_type_id':type,'quantity':q,'recovered_quantity':r,'unit':unit,'department':dept.text,'destination':dest.text,'treatment_method':method.text,'cost_dzd':double.tryParse(cost.text)??0,'income_dzd':double.tryParse(income.text)??0,'notes':notes.text,'created_by':db.auth.currentUser!.id});if(mounted)setState((){});}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString())));}}
+    }
+    for(final x in [qty,recovered,dept,dest,method,cost,income,notes]){x.dispose();}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(
+    floatingActionButton:FloatingActionButton.extended(onPressed:add,icon:const Icon(Icons.add),label:Text(widget.french?'Ajouter':'إضافة سجل')),
+    body:FutureBuilder<List<Map<String,dynamic>>>(future:load(),builder:(ctx,s){
+      if(s.hasError)return Center(child:Text(s.error.toString()));
+      if(!s.hasData)return const Center(child:CircularProgressIndicator());
+      if(s.data!.isEmpty)return Center(child:Text(widget.french?'Aucun enregistrement':'لا توجد سجلات'));
+      return ListView.builder(padding:const EdgeInsets.all(12),itemCount:s.data!.length,itemBuilder:(ctx,i){
+        final r=s.data![i]; final n=(r['waste_types'] as Map?)?['name']?.toString()??'';
+        return Card(child:ListTile(title:Text(n,style:const TextStyle(fontWeight:FontWeight.bold)),subtitle:Text(r['operation_date'].toString()+' • '+r['quantity'].toString()+' '+r['unit'].toString()+' • '+(widget.french?'Récupéré: ':'مسترجع: ')+r['recovered_quantity'].toString()+'\\n'+(r['department']??'')+' → '+(r['destination']??'')),isThreeLine:true,trailing:IconButton(icon:const Icon(Icons.delete_outline),onPressed:()async{try{await Supabase.instance.client.from('waste_records').delete().eq('id',r['id']);if(mounted)setState((){});}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString())));}})));
+      });
+    }));
+}
+Widget _field(TextEditingController c,String label,[bool number=false])=>Padding(padding:const EdgeInsets.only(bottom:9),child:TextField(controller:c,keyboardType:number?const TextInputType.numberWithOptions(decimal:true):TextInputType.text,decoration:InputDecoration(labelText:label,border:const OutlineInputBorder(),isDense:true)));
+
+class SeviraRecordsPage extends StatefulWidget {
+  const SeviraRecordsPage({super.key,required this.french}); final bool french;
+  @override State<SeviraRecordsPage> createState()=>_SeviraRecordsPageState();
+}
+class _SeviraRecordsPageState extends State<SeviraRecordsPage>{
+  Future<List<Map<String,dynamic>>> load()async=>List<Map<String,dynamic>>.from(await Supabase.instance.client.from('sevira_records').select().order('created_at',ascending:false));
+  Future<void> add()async{
+    final t=TextEditingController(),q=TextEditingController(),u=TextEditingController(text:'kg'),h=TextEditingController(),d=TextEditingController(),n=TextEditingController();
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('SEVIRA'),content:SizedBox(width:420,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[_field(t,widget.french?'Type de déchet':'نوع النفايات'),_field(q,widget.french?'Quantité':'الكمية',true),_field(u,widget.french?'Unité':'الوحدة'),_field(h,widget.french?'Mode de gestion':'طريقة التسيير'),_field(d,widget.french?'Destination':'الوجهة'),_field(n,widget.french?'Notes':'ملاحظات')])),),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:Text(widget.french?'Annuler':'إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:Text(widget.french?'Enregistrer':'حفظ'))]));
+    if(ok==true){try{await Supabase.instance.client.from('sevira_records').insert({'waste_type':t.text,'quantity':double.tryParse(q.text.replaceAll(',','.'))??0,'unit':u.text,'handling_method':h.text,'destination':d.text,'notes':n.text,'created_by':Supabase.instance.client.auth.currentUser!.id});if(mounted)setState((){});}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString())));}}
+    for(final x in [t,q,u,h,d,n]){x.dispose();}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(floatingActionButton:FloatingActionButton.extended(onPressed:add,icon:const Icon(Icons.add),label:Text(widget.french?'Ajouter':'إضافة')),
+    body:FutureBuilder<List<Map<String,dynamic>>>(future:load(),builder:(ctx,s){if(s.hasError)return Center(child:Text(s.error.toString()));if(!s.hasData)return const Center(child:CircularProgressIndicator());if(s.data!.isEmpty)return Center(child:Text(widget.french?'Registre SEVIRA vide':'سجل SEVIRA فارغ'));return ListView(children:[for(final r in s.data!)Card(child:ListTile(title:Text(r['waste_type'].toString()),subtitle:Text(r['quantity'].toString()+' '+r['unit'].toString()+' • '+r['handling_method'].toString()+'\\n'+r['destination'].toString()),isThreeLine:true))]);}));
+}
+
+class FinanceRecordsPage extends StatefulWidget {const FinanceRecordsPage({super.key,required this.french});final bool french;@override State<FinanceRecordsPage> createState()=>_FinanceRecordsPageState();}
+class _FinanceRecordsPageState extends State<FinanceRecordsPage>{
+ @override Widget build(BuildContext context)=>FutureBuilder<List<Map<String,dynamic>>>(future:Supabase.instance.client.from('waste_records').select('cost_dzd,income_dzd,waste_types(name)'),builder:(ctx,s){
+  if(s.hasError)return Center(child:Text(s.error.toString()));if(!s.hasData)return const Center(child:CircularProgressIndicator());
+  final totals=<String,List<double>>{};for(final r in s.data!){final name=(r['waste_types'] as Map?)?['name']?.toString()??'—';final v=totals.putIfAbsent(name,()=>[0,0]);v[0]+=(double.tryParse(r['cost_dzd'].toString())??0);v[1]+=(double.tryParse(r['income_dzd'].toString())??0);}
+  return ListView(padding:const EdgeInsets.all(12),children:[Text(widget.french?'Coûts et revenus par catégorie':'التكاليف والمداخيل حسب كل نوع',style:Theme.of(context).textTheme.titleLarge),for(final e in totals.entries)Card(child:ListTile(title:Text(e.key),subtitle:Text((widget.french?'Coûts: ':'التكاليف: ')+e.value[0].toStringAsFixed(2)+' DZD\\n'+(widget.french?'Revenus: ':'المداخيل: ')+e.value[1].toStringAsFixed(2)+' DZD'),isThreeLine:true,trailing:Text((e.value[1]-e.value[0]).toStringAsFixed(2)+'\\nDZD')))]);
+ });
+}
+class ReportsRecordsPage extends StatefulWidget {const ReportsRecordsPage({super.key,required this.french});final bool french;@override State<ReportsRecordsPage> createState()=>_ReportsRecordsPageState();}
+class _ReportsRecordsPageState extends State<ReportsRecordsPage>{
+ @override Widget build(BuildContext context)=>FutureBuilder<List<Map<String,dynamic>>>(future:Supabase.instance.client.from('waste_records').select('quantity,recovered_quantity,cost_dzd,income_dzd,waste_types(name)'),builder:(ctx,s){
+  if(s.hasError)return Center(child:Text(s.error.toString()));if(!s.hasData)return const Center(child:CircularProgressIndicator());final rows=s.data!;
+  double sum(String k)=>rows.fold(0.0,(a,r)=>a+(double.tryParse(r[k].toString())??0));
+  final q=sum('quantity'),rec=sum('recovered_quantity');
+  return ListView(padding:const EdgeInsets.all(16),children:[
+   Text(widget.french?'Rapport général':'التقرير العام',style:Theme.of(context).textTheme.headlineSmall),
+   _reportTile(widget.french?'Nombre d’opérations':'عدد العمليات',rows.length.toString()),
+   _reportTile(widget.french?'Quantité totale':'إجمالي الكمية',q.toStringAsFixed(2)),
+   _reportTile(widget.french?'Quantité récupérée':'الكمية المسترجعة',rec.toStringAsFixed(2)),
+   _reportTile(widget.french?'Taux de récupération':'نسبة الاسترجاع',(q==0?0:rec/q*100).toStringAsFixed(1)+'%'),
+   _reportTile(widget.french?'Coûts totaux':'إجمالي التكاليف',sum('cost_dzd').toStringAsFixed(2)+' DZD'),
+   _reportTile(widget.french?'Revenus totaux':'إجمالي المداخيل',sum('income_dzd').toStringAsFixed(2)+' DZD'),
+  ]);
+ });
+}
+Widget _reportTile(String a,String b)=>Card(child:ListTile(title:Text(a),trailing:Text(b,style:const TextStyle(fontWeight:FontWeight.bold))));
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key, required this.french});
