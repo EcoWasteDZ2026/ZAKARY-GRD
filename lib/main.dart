@@ -159,11 +159,16 @@ class _ActivationGateState extends State<ActivationGate> {
                   ? 'Votre compte a été créé, mais l’administrateur doit l’activer avant l’accès aux données de l’usine.'
                   : 'تم إنشاء الحساب، لكن يجب على المسؤول تفعيله قبل الوصول إلى بيانات المصنع.',
                   textAlign: TextAlign.center),
-                if (snapshot.hasError) Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(widget.french ? 'Vérifiez le schéma de la base de données.' : 'يرجى التحقق من إعداد جداول قاعدة البيانات.',
-                    style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
-                ),
+                if (snapshot.hasError) {
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      widget.french ? 'Vérifiez le schéma de la base de données.' : 'يرجى التحقق من إعداد جداول قاعدة البيانات.',
+                      style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                },
                 const SizedBox(height: 16),
                 OutlinedButton(
                   onPressed: () => Supabase.instance.client.auth.signOut(),
