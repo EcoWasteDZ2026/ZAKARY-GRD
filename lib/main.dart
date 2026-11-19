@@ -95,7 +95,7 @@ class AuthGate extends StatelessWidget {
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
         final session = Supabase.instance.client.auth.currentSession;
-        if (session == null) return LoginPage(french: french, onLanguage: onLanguage);
+        if (session == null) { return LoginPage(french: french, onLanguage: onLanguage); }
         return ActivationGate(
           key: ValueKey(session.user.id),
           french: french,
@@ -159,16 +159,18 @@ class _ActivationGateState extends State<ActivationGate> {
                   ? 'Votre compte a été créé, mais l’administrateur doit l’activer avant l’accès aux données de l’usine.'
                   : 'تم إنشاء الحساب، لكن يجب على المسؤول تفعيله قبل الوصول إلى بيانات المصنع.',
                   textAlign: TextAlign.center),
-                if (snapshot.hasError) {
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      widget.french ? 'Vérifiez le schéma de la base de données.' : 'يرجى التحقق من إعداد جداول قاعدة البيانات.',
-                      style: const TextStyle(color: Colors.red),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                },
+                ...(snapshot.hasError
+                    ? <Widget>[
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            widget.french ? 'Vérifiez le schéma de la base de données.' : 'يرجى التحقق من إعداد جداول قاعدة البيانات.',
+                            style: const TextStyle(color: Colors.red),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ]
+                    : const <Widget>[]),
                 const SizedBox(height: 16),
                 OutlinedButton(
                   onPressed: () => Supabase.instance.client.auth.signOut(),
@@ -216,7 +218,7 @@ class _LoginPageState extends State<LoginPage> {
     } catch (_) {
       if (mounted) setState(() => error = widget.french ? 'Connexion impossible.' : 'تعذر الاتصال.');
     } finally {
-      if (mounted) setState(() => busy = false);
+      if (mounted) { setState(() => busy = false); }
     }
   }
 
