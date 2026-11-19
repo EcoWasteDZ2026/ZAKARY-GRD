@@ -28,6 +28,10 @@ jobs:
         run: flutter create --platforms=android,windows --project-name zakary_grd .
       - name: Resolve packages
         run: flutter pub get
+      - name: Analyze Dart code
+        run: flutter analyze
+      - name: Run Flutter tests
+        run: flutter test
       - name: Build release APK
         run: >-
           flutter build apk --release
@@ -52,6 +56,10 @@ jobs:
         run: flutter create --platforms=windows --project-name zakary_grd .
       - name: Resolve packages
         run: flutter pub get
+      - name: Analyze Dart code
+        run: flutter analyze
+      - name: Run Flutter tests
+        run: flutter test
       - name: Build Windows release
         run: >-
           flutter build windows --release
