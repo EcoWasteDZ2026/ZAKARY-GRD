@@ -28,8 +28,14 @@ data class WasteRecord(
     val cost: Double, val income: Double, val note: String
 )
 
+data class SeviraRecord(
+    val id: Long, val wasteType: String, val quantity: Double, val unit: String,
+    val handlingMethod: String, val destination: String, val note: String
+)
+
 class MainActivity : Activity() {
     private val records = mutableListOf<WasteRecord>()
+    private val seviraRecords = mutableListOf<SeviraRecord>()
     private val types = listOf("بلاستيك", "ورق وكرتون", "معدن", "نفايات عضوية", "نفايات كيميائية", "زيوت مستعملة", "حمأة", "أخرى")
     private val departments = listOf("الإنتاج", "المخازن", "الصيانة", "المخبر", "معالجة المياه", "الإدارة", "أخرى")
     private val destinations = listOf("إعادة التدوير", "التثمين", "المعالجة", "التخلص النهائي", "مخزن مؤقت", "أخرى")
@@ -41,6 +47,8 @@ class MainActivity : Activity() {
     private lateinit var formPage: LinearLayout
     private lateinit var financePage: LinearLayout
     private lateinit var reportsPage: LinearLayout
+    private lateinit var seviraPage: LinearLayout
+    private lateinit var seviraTable: LinearLayout
     private lateinit var dashboardStats: LinearLayout
     private lateinit var recordList: LinearLayout
     private lateinit var dateInput: EditText
@@ -58,6 +66,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         loadRecords()
+        loadSeviraRecords()
         buildScreen()
         renderRecords()
         showPage("dashboard")
@@ -75,7 +84,7 @@ class MainActivity : Activity() {
         setContentView(scroll)
 
         val top = TextView(this).apply {
-            text = "ZAKARY GRD  ♻"
+            text = "HENKEL ALGÉRIE\nZAKARY GRD  ♻"
             textSize = 23f
             setTypeface(null, Typeface.BOLD)
             setTextColor(0xFFFFFFFF.toInt())
@@ -98,7 +107,7 @@ class MainActivity : Activity() {
             gravity = Gravity.RIGHT
         }, matchWrap())
         hero.addView(TextView(this).apply {
-            text = "تسجيل • متابعة • تثمين • تقارير"
+            text = "Usine de Mila  •  Gestion et Récupération des Déchets\nتسجيل • متابعة • تثمين • تقارير"
             textSize = 14f
             setTextColor(0xFFD8F4EA.toInt())
             gravity = Gravity.RIGHT
@@ -114,7 +123,8 @@ class MainActivity : Activity() {
             Triple("تسجيل نفايات", "form", "＋"),
             Triple("السجلات", "records", "☷"),
             Triple("التكاليف والمداخيل", "finance", "دج"),
-            Triple("التقارير والنسخ", "reports", "⇩")
+            Triple("التقارير والنسخ", "reports", "⇩"),
+            Triple("SEVIRA", "sevira", "▤")
         ).forEach { item ->
             val b = Button(this).apply {
                 text = "${item.third}  ${item.first}"
@@ -180,6 +190,19 @@ class MainActivity : Activity() {
         }, matchWrap())
         pages["reports"] = reportsPage
 
+        seviraPage = newPage("SEVIRA – جدول متابعة النفايات")
+        seviraPage.addView(TextView(this).apply {
+            text = "سجّل لكل نفاية الكمية ووحدة القياس وطريقة التعامل والوجهة. هذا الجدول مستقل عن سجل النفايات الرئيسي."
+            textSize = 14f
+            setTextColor(0xFF526675.toInt())
+            setPadding(dp(10), dp(4), dp(10), dp(10))
+        }, matchWrap())
+        seviraPage.addView(actionButton("＋ إضافة سطر إلى جدول SEVIRA") { addSeviraRecord() }, matchWrap())
+        seviraTable = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        seviraPage.addView(seviraTable, matchWrap())
+        pages["sevira"] = seviraPage
+        renderSeviraTable()
+
         refreshDashboard()
         refreshFinance()
     }
@@ -210,6 +233,7 @@ class MainActivity : Activity() {
         if (name == "records") renderRecords()
         if (name == "finance") refreshFinance()
         if (name == "reports") Unit
+        if (name == "sevira") renderSeviraTable()
     }
 
     private fun field(parent: LinearLayout, hintText: String, numeric: Boolean = false): EditText {
@@ -473,6 +497,107 @@ class MainActivity : Activity() {
             text = "تُحسب تكلفة كل نوع وحده من العمليات المسجلة لذلك النوع، ولا تُوزَّع تكلفة نوع على الأنواع الأخرى. تكلفة الكيلوغرام = تكاليف النوع ÷ كميته المنتجة. أدخل تكاليف النقل والمعالجة لكل سجل بدقة، فهذه الحسابات تعتمد على البيانات التي تدخلها."
             textSize = 14f; setTextColor(0xFF795500.toInt()); setPadding(dp(12), dp(12), dp(12), dp(12)); setBackgroundColor(0xFFFFF2CC.toInt())
         }, matchWrap())
+    }
+
+    private fun addSeviraRecord() {
+        val panel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(8), 0, dp(8), 0) }
+        fun input(hintText: String): EditText = EditText(this).apply { hint = hintText; textSize = 15f }
+        val waste = input("نوع النفاية")
+        val quantity = input("الكمية")
+        val unit = input("وحدة القياس (كغ، طن، لتر...)" )
+        val method = input("طريقة التعامل / المعالجة / التثمين")
+        val destination = input("الوجهة أو الجهة المستقبلة")
+        val note = input("ملاحظات")
+        listOf(waste, quantity, unit, method, destination, note).forEach { panel.addView(it) }
+        AlertDialog.Builder(this).setTitle("إضافة سجل SEVIRA").setView(panel)
+            .setNegativeButton("إلغاء", null)
+            .setPositiveButton("حفظ") { _, _ ->
+                val name = waste.text.toString().trim()
+                val qty = quantity.text.toString().trim().replace(',', '.').toDoubleOrNull()
+                val measure = unit.text.toString().trim()
+                val handling = method.text.toString().trim()
+                val dest = destination.text.toString().trim()
+                if (name.isBlank() || qty == null || qty < 0 || measure.isBlank() || handling.isBlank()) {
+                    Toast.makeText(this, "أدخل نوع النفاية والكمية والوحدة وطريقة التعامل بشكل صحيح.", Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
+                seviraRecords.add(SeviraRecord(System.currentTimeMillis(), name, qty, measure, handling, dest, note.text.toString().trim()))
+                persistSeviraRecords()
+                renderSeviraTable()
+                Toast.makeText(this, "تمت إضافة السطر إلى جدول SEVIRA", Toast.LENGTH_SHORT).show()
+            }.show()
+    }
+
+    private fun renderSeviraTable() {
+        if (!::seviraTable.isInitialized) return
+        seviraTable.removeAllViews()
+        val headers = "نوع النفاية  |  الكمية  |  الوحدة  |  طريقة التعامل  |  الوجهة"
+        seviraTable.addView(TextView(this).apply {
+            text = headers
+            textSize = 14f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(0xFFFFFFFF.toInt())
+            setPadding(dp(10), dp(12), dp(10), dp(12))
+            setBackgroundColor(0xFF173650.toInt())
+        }, matchWrap())
+        if (seviraRecords.isEmpty()) {
+            seviraTable.addView(TextView(this).apply {
+                text = "لا توجد بيانات SEVIRA بعد. أضف السجلات وفق وثيقة SEVIRA الأصلية."
+                textSize = 14f
+                setTextColor(0xFF657681.toInt())
+                setPadding(dp(10), dp(14), dp(10), dp(14))
+            }, matchWrap())
+        }
+        seviraRecords.forEach { r ->
+            val card = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(12), dp(10), dp(12), dp(10))
+                setBackgroundColor(0xFFFFFFFF.toInt())
+            }
+            card.addView(TextView(this).apply {
+                text = "${r.wasteType}  •  ${fmt(r.quantity)} ${r.unit}"
+                textSize = 16f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(0xFF247A5A.toInt())
+            }, matchWrap())
+            card.addView(TextView(this).apply {
+                text = "طريقة التعامل: ${r.handlingMethod}\nالوجهة: ${r.destination.ifBlank { "غير محددة" }}" + if (r.note.isBlank()) "" else "\nملاحظات: ${r.note}"
+                textSize = 14f
+                setTextColor(0xFF243746.toInt())
+                setPadding(0, dp(6), 0, dp(6))
+            }, matchWrap())
+            card.addView(actionButton("حذف السطر") {
+                AlertDialog.Builder(this).setTitle("حذف سطر SEVIRA?").setMessage(r.wasteType)
+                    .setNegativeButton("إلغاء", null).setPositiveButton("حذف") { _, _ ->
+                        seviraRecords.removeAll { it.id == r.id }
+                        persistSeviraRecords(); renderSeviraTable()
+                    }.show()
+            }, matchWrap())
+            val p = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            p.bottomMargin = dp(8)
+            seviraTable.addView(card, p)
+        }
+    }
+
+    private fun persistSeviraRecords() {
+        val array = JSONArray()
+        seviraRecords.forEach { r -> array.put(JSONObject().apply {
+            put("id", r.id); put("wasteType", r.wasteType); put("quantity", r.quantity)
+            put("unit", r.unit); put("handlingMethod", r.handlingMethod)
+            put("destination", r.destination); put("note", r.note)
+        }) }
+        getSharedPreferences("zakary_grd", MODE_PRIVATE).edit().putString("sevira_records", array.toString()).apply()
+    }
+
+    private fun loadSeviraRecords() {
+        try {
+            val array = JSONArray(getSharedPreferences("zakary_grd", MODE_PRIVATE).getString("sevira_records", "[]") ?: "[]")
+            for (i in 0 until array.length()) {
+                val o = array.getJSONObject(i)
+                seviraRecords.add(SeviraRecord(o.optLong("id"), o.optString("wasteType"), o.optDouble("quantity"),
+                    o.optString("unit"), o.optString("handlingMethod"), o.optString("destination"), o.optString("note")))
+            }
+        } catch (_: Exception) { seviraRecords.clear() }
     }
 
     private fun showTypeSummary() {
