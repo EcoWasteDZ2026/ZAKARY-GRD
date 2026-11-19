@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const _supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -124,7 +124,7 @@ class _ActivationGateState extends State<ActivationGate> {
 
   Future<bool> _checkActivation() async {
     final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return false;
+    if (user == null) { return false; }
     final row = await Supabase.instance.client
         .from('profiles')
         .select('is_active')
@@ -207,16 +207,18 @@ class _LoginPageState extends State<LoginPage> {
       final auth = Supabase.instance.client.auth;
       if (createAccount) {
         await auth.signUp(email: email.text.trim(), password: password.text);
-        if (mounted) setState(() => error = widget.french
-          ? 'Demande créée. Un administrateur doit activer le compte.'
-          : 'تم إرسال طلب إنشاء الحساب. يجب على المسؤول تفعيل الحساب.');
+        if (mounted) {
+          setState(() => error = widget.french
+            ? 'Demande créée. Un administrateur doit activer le compte.'
+            : 'تم إرسال طلب إنشاء الحساب. يجب على المسؤول تفعيل الحساب.');
+        }
       } else {
         await auth.signInWithPassword(email: email.text.trim(), password: password.text);
       }
     } on AuthException catch (e) {
-      if (mounted) setState(() => error = e.message);
+      if (mounted) { setState(() => error = e.message); }
     } catch (_) {
-      if (mounted) setState(() => error = widget.french ? 'Connexion impossible.' : 'تعذر الاتصال.');
+      if (mounted) { setState(() => error = widget.french ? 'Connexion impossible.' : 'تعذر الاتصال.'); }
     } finally {
       if (mounted) { setState(() => busy = false); }
     }
