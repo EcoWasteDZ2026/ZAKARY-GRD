@@ -36,7 +36,20 @@ data class SeviraRecord(
 class MainActivity : Activity() {
     private val records = mutableListOf<WasteRecord>()
     private val seviraRecords = mutableListOf<SeviraRecord>()
-    private val types = listOf("بلاستيك", "ورق وكرتون", "معدن", "نفايات عضوية", "نفايات كيميائية", "زيوت مستعملة", "حمأة", "أخرى")
+    // One unified register: the five contract categories plus the six additional categories supplied by the user.
+    private val types = listOf(
+        "Caisses Cartons et déchets de papiers — الصناديق الكرتونية ونفايات الورق",
+        "Film Plastique (étirable, houssage) — الأغلفة والأفلام البلاستيكية",
+        "Big Bags — الأكياس الكبيرة",
+        "Fûts Métalliques — البراميل المعدنية",
+        "Déchets palettes en bois et débris de bois — نفايات المنصات الخشبية وبقايا الخشب",
+        "Emballages contaminés par produit chimique — أغلفة ملوثة بمواد كيميائية",
+        "Déchets cantine — نفايات المطعم",
+        "Déchets laboratoire — نفايات المخبر",
+        "Déchets EPI contaminés — معدات الوقاية الشخصية الملوثة",
+        "Déchets huile usagée — نفايات الزيوت المستعملة",
+        "Construction waste — نفايات البناء"
+    )
     private val departments = listOf("الإنتاج", "المخازن", "الصيانة", "المخبر", "معالجة المياه", "الإدارة", "أخرى")
     private val destinations = listOf("إعادة التدوير", "التثمين", "المعالجة", "التخلص النهائي", "مخزن مؤقت", "أخرى")
     private val pages = mutableMapOf<String, LinearLayout>()
