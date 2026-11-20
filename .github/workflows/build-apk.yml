@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - henkel-apk-build
+      - zakary-grd-enhanced-2026-11-20
     paths-ignore:
       - 'docs/download/**'
 
