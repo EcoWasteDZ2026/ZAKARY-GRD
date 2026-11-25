@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -70,40 +71,69 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
             setPadding(dp(14), dp(12), dp(14), dp(22))
-            setBackgroundColor(0xFFF1F6F5.toInt())
+            setBackgroundColor(0xFFF4F8F5.toInt())
         }
         scroll.addView(root)
         setContentView(scroll)
 
-        val top = TextView(this).apply {
-            text = "ZAKARY GRD  ♻"
+        val top = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            background = roundedPanel(0xFF087A45.toInt(), 22)
+        }
+        val brand = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
+        }
+        brand.addView(TextView(this).apply {
+            text = "ZAKARY GRD"
             textSize = 23f
             setTypeface(null, Typeface.BOLD)
             setTextColor(0xFFFFFFFF.toInt())
-            gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
-            setPadding(dp(18), dp(17), dp(18), dp(17))
-            setBackgroundColor(0xFF05090D.toInt())
-        }
+        }, matchWrap())
+        brand.addView(TextView(this).apply {
+            text = "GESTION & RÉCUPÉRATION DES DÉCHETS"
+            textSize = 9f
+            setTextColor(0xFFE0F5E9.toInt())
+        }, matchWrap())
+        top.addView(brand, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        top.addView(TextView(this).apply {
+            text = "♻"
+            textSize = 38f
+            gravity = Gravity.CENTER
+            setTextColor(0xFFFFFFFF.toInt())
+            setPadding(dp(8), 0, dp(8), 0)
+        }, LinearLayout.LayoutParams(dp(58), dp(58)))
         root.addView(top, matchWrap())
+
         val hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
-            setPadding(dp(18), dp(18), dp(18), dp(18))
-            setBackgroundColor(0xFF173650.toInt())
+            setPadding(dp(18), dp(19), dp(18), dp(19))
+            background = roundedPanel(0xFF075B3A.toInt(), 20)
         }
         hero.addView(TextView(this).apply {
-            text = "نظام تسيير واسترجاع النفايات الصناعية"
-            textSize = 20f
+            text = "إدارة ذكية للنفايات الصناعية"
+            textSize = 21f
             setTypeface(null, Typeface.BOLD)
             setTextColor(0xFFFFFFFF.toInt())
             gravity = Gravity.RIGHT
         }, matchWrap())
         hero.addView(TextView(this).apply {
-            text = "تسجيل • متابعة • تثمين • تقارير"
+            text = "من التسجيل والمتابعة إلى الاسترجاع والتقارير"
             textSize = 14f
-            setTextColor(0xFFD8F4EA.toInt())
+            setTextColor(0xFFE0F5E9.toInt())
             gravity = Gravity.RIGHT
-            setPadding(0, dp(7), 0, 0)
+            setPadding(0, dp(7), 0, dp(9))
+        }, matchWrap())
+        hero.addView(TextView(this).apply {
+            text = "HENKEL  •  ZAKARY GRD"
+            textSize = 12f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(0xFFB8F06A.toInt())
+            gravity = Gravity.RIGHT
         }, matchWrap())
         root.addView(hero, matchWrap())
 
@@ -188,6 +218,13 @@ class MainActivity : Activity() {
 
         refreshDashboard()
         refreshFinance()
+    }
+
+    private fun roundedPanel(color: Int, radiusDp: Int): GradientDrawable {
+        return GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = dp(radiusDp).toFloat()
+        }
     }
 
     private fun newPage(title: String): LinearLayout {
