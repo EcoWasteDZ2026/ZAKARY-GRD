@@ -249,92 +249,279 @@ class MainActivity : Activity() {
 
     private fun buildSafiraPage() {
         safiraPage.addView(TextView(this).apply {
-            text = "مرجع مستقل لتصنيفات وأنواع النفايات كما ظهرت في وثائق Henkel المقدمة."
+            text = "SAFIRA — جداول جرد ومتابعة النفايات حسب التصنيفات الظاهرة في وثائق الموقع."
             textSize = 14f
             setTextColor(0xFF52645D.toInt())
             setPadding(dp(12), dp(12), dp(12), dp(12))
             setBackgroundColor(0xFFE8F5EF.toInt())
         }, matchWrap())
 
-        fun category(title: String, subtitle: String, entries: List<String>?, note: String? = null) {
-            val card = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                layoutDirection = View.LAYOUT_DIRECTION_RTL
-                setPadding(dp(13), dp(11), dp(13), dp(11))
-                setBackgroundColor(0xFFFFFFFF.toInt())
-            }
-            card.addView(TextView(this).apply {
-                text = title
-                textSize = 17f
-                setTypeface(null, Typeface.BOLD)
-                setTextColor(0xFF247A5A.toInt())
+        safiraPage.addView(TextView(this).apply {
+            text = "Waste Types (Production Sites) — 2026"
+            textSize = 18f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(0xFF173650.toInt())
+            setPadding(0, dp(14), 0, dp(7))
+        }, matchWrap())
+
+        val selections = listOf(
+            "Production Waste" to true,
+            "Obsolete - Non-Production" to true,
+            "Municipal waste" to true,
+            "Wastewater related Waste" to false,
+            "Construction Waste" to true
+        )
+        selections.forEach { (label, selected) ->
+            safiraPage.addView(TextView(this).apply {
+                text = (if (selected) "☑  " else "☐  ") + label
+                textSize = 14f
+                setTextColor(if (selected) 0xFF247A5A.toInt() else 0xFF7A8580.toInt())
+                setPadding(dp(8), dp(5), dp(8), dp(5))
             }, matchWrap())
-            card.addView(TextView(this).apply {
-                text = subtitle
-                textSize = 13f
-                setTextColor(0xFF52645D.toInt())
-                setPadding(0, dp(4), 0, dp(7))
-            }, matchWrap())
-            card.addView(actionButton("عرض التفاصيل") {
-                val message = if (entries.isNullOrEmpty()) {
-                    "لا توجد تفاصيل فرعية ظاهرة في الوثائق المتاحة لهذا التصنيف. هذا لا يعني عدم وجود نفايات فعلية ضمنه."
-                } else entries.joinToString("\n\n")
-                AlertDialog.Builder(this@MainActivity)
-                    .setTitle(title)
-                    .setMessage(message)
-                    .setPositiveButton("إغلاق", null)
-                    .show()
-            }, matchWrap())
-            val p = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            p.bottomMargin = dp(9)
-            safiraPage.addView(card, p)
         }
 
+        addSafiraTable(
+            "Production Waste",
+            "جدول نفايات الإنتاج — البيانات المنقولة من الصورة كما هي.",
+            listOf("Waste item", "Waste category", "Treatment / destination"),
+            listOf(
+                listOf("Packaging Film", "Plastic Waste", "Recycling"),
+                listOf("Plastic Big Bag", "Plastic Waste", "Recycling"),
+                listOf("Metal Barrel", "Mixed/Contaminated Packaging", "Incineration with energy recovery"),
+                listOf("Wood Pallet Waste", "Wood", "Recycling"),
+                listOf("laboratory waste", "Chemical Waste", "Incineration with energy recovery"),
+                listOf("Contaminated PPE waste", "Chemical Waste", "Incineration with energy recovery")
+            ),
+            "production_waste"
+        )
+
+        addSafiraTable(
+            "Obsolete - Non-Production",
+            "نفايات ومواد متقادمة غير مرتبطة بالإنتاج. لا تظهر صفوف تفصيلية لهذا الجدول في الصور المرسلة.",
+            listOf("Waste item", "Material / category", "Field 3", "Treatment / destination", "Field 5"),
+            emptyList(),
+            "obsolete_non_production"
+        )
+
+        addSafiraTable(
+            "Municipal waste",
+            "النفايات البلدية. لا تظهر صفوف تفصيلية لهذا الجدول في الصور المرسلة.",
+            listOf("Waste item", "Material / category", "Field 3", "Treatment / destination", "Field 5"),
+            emptyList(),
+            "municipal_waste"
+        )
+
+        addSafiraTable(
+            "Wastewater related Waste",
+            "النفايات المرتبطة بالمياه المستعملة. هذا التصنيف غير محدد في شاشة الاختيار المرسلة لعام 2026.",
+            listOf("Waste item", "Material / category", "Field 3", "Treatment / destination", "Field 5"),
+            emptyList(),
+            "wastewater_related"
+        )
+
+        addSafiraTable(
+            "Construction Waste",
+            "نفايات البناء — الصفوف الظاهرة في الجدول الأصلي.",
+            listOf("Waste item", "Material / type", "Field 3", "Treatment / destination", "Field 5"),
+            listOf(
+                listOf("Construction waste", "Concrete, bricks, tiles and ceramics", "No", "Landfill", "No"),
+                listOf("Metallic Waste", "Metals (and their alloys)", "No", "Recycling", "No")
+            ),
+            "construction_waste"
+        )
+
         safiraPage.addView(TextView(this).apply {
-            text = "التصنيفات الرئيسية في شاشة Waste Types (Production Sites)"
+            text = "Material for Recycling"
             textSize = 18f
             setTypeface(null, Typeface.BOLD)
             setTextColor(0xFF173650.toInt())
-            setPadding(0, dp(14), 0, dp(8))
+            setPadding(0, dp(16), 0, dp(6))
         }, matchWrap())
 
-        category("Production Waste", "نفايات الإنتاج", listOf(
-            "Packaging Film — Plastic Waste — Recycling",
-            "Plastic Big Bag — Plastic Waste — Recycling",
-            "Metal Barrel — Mixed/Contaminated Packaging — Incineration with energy recovery",
-            "Wood Pallet Waste — Wood — Recycling",
-            "laboratory waste — Chemical Waste — Incineration with energy recovery",
-            "Contaminated PPE waste — Chemical Waste — Incineration with energy recovery"
-        ))
-        category("Obsolete - Non-Production", "نفايات قديمة / غير إنتاجية", null)
-        category("Municipal waste", "النفايات البلدية", null)
-        category("Wastewater related Waste", "النفايات المرتبطة بالمياه المستعملة — غير محددة في شاشة الاختيار المرسلة", null)
-        category("Construction Waste", "نفايات البناء", listOf(
-            "Construction waste — Concrete, bricks, tiles and ceramics — Landfill",
-            "Metallic Waste — Metals (and their alloys) — Recycling"
-        ))
+        addSafiraTable(
+            "High-Quality Outbound Recycling",
+            "المواد الموجهة لإعادة التدوير الخارجي عالية الجودة.",
+            listOf("Material", "Material category", "Field 3", "Destination / route", "Field 5"),
+            listOf(listOf("Carton", "Paper and Cardboard", "No", "High-Quality Outbound Recycling", "No")),
+            "high_quality_outbound_recycling"
+        )
+
+        addSafiraTable(
+            "Reuse material",
+            "المواد القابلة لإعادة الاستخدام.",
+            listOf("Material", "Material category", "Reuse route"),
+            listOf(listOf("Pallet conforme", "Wood", "Reused material")),
+            "reuse_material"
+        )
 
         safiraPage.addView(TextView(this).apply {
-            text = "مجموعات المواد الإضافية الظاهرة في الجداول"
-            textSize = 18f
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(0xFF173650.toInt())
-            setPadding(0, dp(14), 0, dp(8))
-        }, matchWrap())
-        category("High-Quality Outbound Recycling", "مواد لإعادة التدوير الخارجي عالية الجودة", listOf(
-            "Carton — Paper and Cardboard — High-Quality Outbound Recycling"
-        ))
-        category("Reuse material", "مواد يعاد استخدامها", listOf(
-            "Pallet conforme — Wood — Reused material"
-        ))
-
-        safiraPage.addView(TextView(this).apply {
-            text = "ملاحظة: تم الحفاظ على أسماء النفايات وطرق المعالجة بالإنجليزية كما ظهرت في الصور. لم تتم إضافة أنواع غير موثقة."
+            text = "ملاحظة مهمة: عناوين بعض الأعمدة لم تكن ظاهرة في الصور؛ لذلك أبقينا الخانات غير الواضحة باسم Field 3 وField 5 دون افتراض معناها. يمكنك تعديل الصفوف وإضافة صفوف جديدة، وتحفظ التغييرات على الهاتف."
             textSize = 13f
             setTextColor(0xFF795500.toInt())
             setPadding(dp(12), dp(12), dp(12), dp(12))
             setBackgroundColor(0xFFFFF2CC.toInt())
         }, matchWrap())
+    }
+
+    private fun addSafiraTable(
+        title: String,
+        subtitle: String,
+        headers: List<String>,
+        initialRows: List<List<String>>,
+        storageKey: String
+    ) {
+        val prefs = getSharedPreferences("zakary_grd_safira", MODE_PRIVATE)
+        val rows = mutableListOf<MutableList<String>>()
+        val saved = prefs.getString(storageKey, null)
+        if (saved != null) {
+            try {
+                val array = JSONArray(saved)
+                for (i in 0 until array.length()) {
+                    val rowArray = array.getJSONArray(i)
+                    val row = mutableListOf<String>()
+                    for (j in headers.indices) row.add(if (j < rowArray.length()) rowArray.optString(j) else "")
+                    rows.add(row)
+                }
+            } catch (_: Exception) { rows.clear() }
+        } else {
+            initialRows.forEach { source -> rows.add(source.toMutableList()) }
+            saveSafiraRows(storageKey, rows)
+        }
+
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            setPadding(dp(11), dp(10), dp(11), dp(10))
+            background = roundedPanel(0xFFFFFFFF.toInt(), 14)
+        }
+        card.addView(TextView(this).apply {
+            text = title
+            textSize = 17f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(0xFF247A5A.toInt())
+        }, matchWrap())
+        card.addView(TextView(this).apply {
+            text = subtitle
+            textSize = 12f
+            setTextColor(0xFF65736D.toInt())
+            setPadding(0, dp(4), 0, dp(8))
+        }, matchWrap())
+
+        val tableHolder = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        fun renderTable() {
+            tableHolder.removeAllViews()
+            val horizontal = android.widget.HorizontalScrollView(this).apply {
+                isHorizontalScrollBarEnabled = true
+            }
+            val table = android.widget.TableLayout(this).apply {
+                isStretchAllColumns = false
+                setPadding(0, 0, 0, dp(4))
+            }
+            fun cell(textValue: String, header: Boolean = false): TextView = TextView(this).apply {
+                text = textValue
+                textSize = if (header) 12f else 13f
+                setTypeface(null, if (header) Typeface.BOLD else Typeface.NORMAL)
+                setTextColor(if (header) 0xFFFFFFFF.toInt() else 0xFF243746.toInt())
+                gravity = Gravity.CENTER
+                minWidth = dp(112)
+                setPadding(dp(8), dp(9), dp(8), dp(9))
+                setBackgroundColor(if (header) 0xFF247A5A.toInt() else 0xFFF5F8F6.toInt())
+            }
+            val head = android.widget.TableRow(this)
+            headers.forEach { head.addView(cell(it, true)) }
+            head.addView(cell("Actions", true))
+            table.addView(head)
+            if (rows.isEmpty()) {
+                val emptyRow = android.widget.TableRow(this)
+                emptyRow.addView(cell("No entries yet"))
+                table.addView(emptyRow)
+            }
+            rows.forEachIndexed { index, values ->
+                val tr = android.widget.TableRow(this)
+                values.forEach { tr.addView(cell(it.ifBlank { "—" })) }
+                val actions = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(4), dp(3), dp(4), dp(3))
+                }
+                actions.addView(actionButton("Edit") { editSafiraRow(title, headers, values, index) { updated ->
+                    rows[index] = updated.toMutableList()
+                    saveSafiraRows(storageKey, rows)
+                    renderTable()
+                } }, LinearLayout.LayoutParams(dp(88), dp(42)))
+                actions.addView(actionButton("Delete") {
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle("Delete row")
+                        .setMessage("Delete this row from $title?")
+                        .setNegativeButton("Cancel", null)
+                        .setPositiveButton("Delete") { _, _ ->
+                            rows.removeAt(index)
+                            saveSafiraRows(storageKey, rows)
+                            renderTable()
+                        }.show()
+                }, LinearLayout.LayoutParams(dp(88), dp(42)))
+                tr.addView(actions)
+                table.addView(tr)
+            }
+            horizontal.addView(table)
+            tableHolder.addView(horizontal, matchWrap())
+        }
+        renderTable()
+        card.addView(tableHolder, matchWrap())
+        card.addView(actionButton("＋ Add row") {
+            editSafiraRow(title, headers, List(headers.size) { "" }, -1) { updated ->
+                rows.add(updated.toMutableList())
+                saveSafiraRows(storageKey, rows)
+                renderTable()
+            }
+        }, matchWrap())
+        val p = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        p.bottomMargin = dp(10)
+        safiraPage.addView(card, p)
+    }
+
+    private fun editSafiraRow(
+        title: String,
+        headers: List<String>,
+        current: List<String>,
+        index: Int,
+        onSave: (List<String>) -> Unit
+    ) {
+        val form = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            setPadding(dp(8), dp(4), dp(8), dp(4))
+        }
+        val inputs = headers.mapIndexed { i, header ->
+            EditText(this).apply {
+                hint = header
+                textSize = 14f
+                setSingleLine(false)
+                minLines = 1
+                setText(current.getOrNull(i).orEmpty())
+                setPadding(dp(9), dp(5), dp(9), dp(5))
+                form.addView(this, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(48)).apply {
+                    bottomMargin = dp(5)
+                })
+            }
+        }
+        val scroll = ScrollView(this).apply { addView(form) }
+        AlertDialog.Builder(this)
+            .setTitle(if (index < 0) "Add row — $title" else "Edit row — $title")
+            .setView(scroll)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Save") { _, _ -> onSave(inputs.map { it.text.toString().trim() }) }
+            .show()
+    }
+
+    private fun saveSafiraRows(storageKey: String, rows: List<List<String>>) {
+        val array = JSONArray()
+        rows.forEach { row ->
+            val item = JSONArray()
+            row.forEach { item.put(it) }
+            array.put(item)
+        }
+        getSharedPreferences("zakary_grd_safira", MODE_PRIVATE)
+            .edit().putString(storageKey, array.toString()).apply()
     }
 
     private fun showPage(name: String) {
