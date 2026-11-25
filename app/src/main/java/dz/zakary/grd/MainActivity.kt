@@ -41,6 +41,7 @@ class MainActivity : Activity() {
     private lateinit var formPage: LinearLayout
     private lateinit var financePage: LinearLayout
     private lateinit var reportsPage: LinearLayout
+    private lateinit var safiraPage: LinearLayout
     private lateinit var dashboardStats: LinearLayout
     private lateinit var recordList: LinearLayout
     private lateinit var dateInput: EditText
@@ -114,7 +115,8 @@ class MainActivity : Activity() {
             Triple("تسجيل نفايات", "form", "＋"),
             Triple("السجلات", "records", "☷"),
             Triple("التكاليف والمداخيل", "finance", "دج"),
-            Triple("التقارير والنسخ", "reports", "⇩")
+            Triple("التقارير والنسخ", "reports", "⇩"),
+            Triple("نظام SAFIRA", "safira", "▣")
         ).forEach { item ->
             val b = Button(this).apply {
                 text = "${item.third}  ${item.first}"
@@ -180,6 +182,10 @@ class MainActivity : Activity() {
         }, matchWrap())
         pages["reports"] = reportsPage
 
+        safiraPage = newPage("نظام SAFIRA")
+        buildSafiraPage()
+        pages["safira"] = safiraPage
+
         refreshDashboard()
         refreshFinance()
     }
@@ -201,6 +207,97 @@ class MainActivity : Activity() {
         }, matchWrap())
         contentHost.addView(page, matchWrap())
         return page
+    }
+
+
+    private fun buildSafiraPage() {
+        safiraPage.addView(TextView(this).apply {
+            text = "مرجع مستقل لتصنيفات وأنواع النفايات كما ظهرت في وثائق Henkel المقدمة."
+            textSize = 14f
+            setTextColor(0xFF52645D.toInt())
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setBackgroundColor(0xFFE8F5EF.toInt())
+        }, matchWrap())
+
+        fun category(title: String, subtitle: String, entries: List<String>?, note: String? = null) {
+            val card = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutDirection = View.LAYOUT_DIRECTION_RTL
+                setPadding(dp(13), dp(11), dp(13), dp(11))
+                setBackgroundColor(0xFFFFFFFF.toInt())
+            }
+            card.addView(TextView(this).apply {
+                text = title
+                textSize = 17f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(0xFF247A5A.toInt())
+            }, matchWrap())
+            card.addView(TextView(this).apply {
+                text = subtitle
+                textSize = 13f
+                setTextColor(0xFF52645D.toInt())
+                setPadding(0, dp(4), 0, dp(7))
+            }, matchWrap())
+            card.addView(actionButton("عرض التفاصيل") {
+                val message = if (entries.isNullOrEmpty()) {
+                    "لا توجد تفاصيل فرعية ظاهرة في الوثائق المتاحة لهذا التصنيف. هذا لا يعني عدم وجود نفايات فعلية ضمنه."
+                } else entries.joinToString("\n\n")
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle(title)
+                    .setMessage(message)
+                    .setPositiveButton("إغلاق", null)
+                    .show()
+            }, matchWrap())
+            val p = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            p.bottomMargin = dp(9)
+            safiraPage.addView(card, p)
+        }
+
+        safiraPage.addView(TextView(this).apply {
+            text = "التصنيفات الرئيسية في شاشة Waste Types (Production Sites)"
+            textSize = 18f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(0xFF173650.toInt())
+            setPadding(0, dp(14), 0, dp(8))
+        }, matchWrap())
+
+        category("Production Waste", "نفايات الإنتاج", listOf(
+            "Packaging Film — Plastic Waste — Recycling",
+            "Plastic Big Bag — Plastic Waste — Recycling",
+            "Metal Barrel — Mixed/Contaminated Packaging — Incineration with energy recovery",
+            "Wood Pallet Waste — Wood — Recycling",
+            "laboratory waste — Chemical Waste — Incineration with energy recovery",
+            "Contaminated PPE waste — Chemical Waste — Incineration with energy recovery"
+        ))
+        category("Obsolete - Non-Production", "نفايات قديمة / غير إنتاجية", null)
+        category("Municipal waste", "النفايات البلدية", null)
+        category("Wastewater related Waste", "النفايات المرتبطة بالمياه المستعملة — غير محددة في شاشة الاختيار المرسلة", null)
+        category("Construction Waste", "نفايات البناء", listOf(
+            "Construction waste — Concrete, bricks, tiles and ceramics — Landfill",
+            "Metallic Waste — Metals (and their alloys) — Recycling"
+        ))
+
+        safiraPage.addView(TextView(this).apply {
+            text = "مجموعات المواد الإضافية الظاهرة في الجداول"
+            textSize = 18f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(0xFF173650.toInt())
+            setPadding(0, dp(14), 0, dp(8))
+        }, matchWrap())
+        category("High-Quality Outbound Recycling", "مواد لإعادة التدوير الخارجي عالية الجودة", listOf(
+            "Carton — Paper and Cardboard — High-Quality Outbound Recycling"
+        ))
+        category("Reuse material", "مواد يعاد استخدامها", listOf(
+            "Pallet conforme — Wood — Reused material"
+        ))
+
+        safiraPage.addView(TextView(this).apply {
+            text = "ملاحظة: تم الحفاظ على أسماء النفايات وطرق المعالجة بالإنجليزية كما ظهرت في الصور. لم تتم إضافة أنواع غير موثقة."
+            textSize = 13f
+            setTextColor(0xFF795500.toInt())
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setBackgroundColor(0xFFFFF2CC.toInt())
+        }, matchWrap())
     }
 
     private fun showPage(name: String) {
